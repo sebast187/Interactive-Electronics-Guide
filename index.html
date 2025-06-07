@@ -23,37 +23,70 @@
             padding: 0;
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
             background-color: var(--bg-color);
             color: var(--text-color);
-            display: flex;
+            /* display: flex; /* Removed for sidebar implementation */
+            overflow-x: hidden; /* Prevent horizontal scroll if sidebar pushes content slightly */
         }
 
-        /* --- Navigation --- */
-        nav {
+        /* --- TOC Sidebar (Adapted from AI for Everyone) --- */
+        #tableOfContentsSidebar {
             width: 280px;
             background-color: var(--primary-color);
-            padding: 20px;
-            height: 100vh;
-            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
             position: fixed;
+            left: -280px; /* Initially hidden */
+            top: 0;
+            bottom: 0;
+            z-index: 1000;
+            transition: left 0.3s ease-in-out;
+            overflow-y: auto;
+            box-shadow: 3px 0 15px rgba(0,0,0,0.2);
             border-right: 2px solid var(--border-color);
         }
 
-        nav h2 {
-            color: var(--accent-color);
+        #tableOfContentsSidebar.open {
+            left: 0;
+        }
+
+        #tableOfContentsSidebar h2 {
+            font-size: 1.4rem;
             margin-bottom: 15px;
-            font-size: 1.4em;
-            text-align: center;
+            color: var(--accent-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
         }
 
-        nav ul {
+        #closeTocSidebarBtn {
+            background: none;
+            border: none;
+            color: var(--text-secondary-color, var(--text-color));
+            font-size: 1.8rem;
+            padding: 0 5px;
+            cursor: pointer;
+        }
+        #closeTocSidebarBtn:hover {
+            color: var(--accent-color);
+        }
+
+        #tableOfContentsSidebar ul {
             list-style: none;
+            padding-left: 0;
+            flex-grow: 1;
         }
 
-        nav ul li a {
+        #tableOfContentsSidebar ul li a {
             display: block;
             padding: 8px 12px;
             text-decoration: none;
@@ -63,39 +96,81 @@
             font-size: 0.95em;
         }
 
-        nav ul li a:hover, nav ul li a.active {
+        #tableOfContentsSidebar ul li a:hover,
+        #tableOfContentsSidebar ul li a.active-toc-link {
             background-color: var(--accent-color);
             color: white;
         }
-
-        /* --- Main Content --- */
-        main {
-            margin-left: 280px; /* Same as nav width */
-            padding: 30px 40px;
-            width: calc(100% - 280px);
-            overflow-y: auto;
+        
+        /* --- TOC Overlay --- */
+        #tocOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        #tocOverlay.active {
+            display: block;
         }
 
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid var(--border-color);
-        }
-
-        header h1 {
+        /* --- Menu Toggle Button in Header --- */
+        #tocMenuToggleBtn {
+            font-size: 1.8rem;
+            background: none;
             color: var(--accent-color);
-            font-size: 2.5em;
-            margin-bottom: 10px;
+            padding: 5px;
+            border: none;
+            cursor: pointer;
+            margin-right: 15px;
+        }
+        
+        /* Main Content Area */
+        main#mainTocContent {
+            padding-top: 70px; /* Space for sticky header */
+            margin-left: 0; /* Default when sidebar is closed, adjusted by JS if sidebar pushes */
+            transition: margin-left 0.3s ease-in-out;
+            width: 100%;
+             min-height: 100vh; /* Ensure it takes at least full viewport height */
+        }
+        
+        /* Sticky Header */
+        main#mainTocContent > header {
+            display: flex; 
+            align-items: center; 
+            padding: 10px 20px; /* Adjusted padding */
+            background-color: var(--primary-color); 
+            border-bottom: 1px solid var(--border-color);
+            min-height: 60px; 
+            position: fixed; /* Make header sticky */
+            top: 0;
+            left: 0; /* Align to left */
+            width: 100%; /* Full width */
+            z-index: 900; 
+            transition: left 0.3s ease-in-out, width 0.3s ease-in-out; /* Transition for sidebar */
         }
 
-        header p {
-            font-size: 1.1em;
+        main#mainTocContent > header h1 {
+            color: var(--accent-color);
+            font-size: 1.8em; /* Adjusted size */
+            margin: 0; /* Reset margin */
+            flex-grow: 1; 
+            text-align: center;
+        }
+        main#mainTocContent > header p { /* Example for a subtitle or tagline in header */
+            font-size: 1em;
             color: var(--highlight-color);
+            margin: 0 0 0 20px; /* Adjust as needed */
+            text-align: right;
         }
 
+
+        /* General Section Styling */
         section {
-            margin-bottom: 40px;
+            margin: 0 20px 40px 20px; /* Consistent margin around sections */
             padding: 25px;
             background-color: var(--secondary-color);
             border-radius: 8px;
@@ -104,6 +179,7 @@
 
         section h2 {
             color: var(--accent-color);
+            margin-top: 0; /* Remove top margin if header provides enough space */
             margin-bottom: 20px;
             padding-bottom: 10px;
             border-bottom: 1px solid var(--highlight-color);
@@ -112,26 +188,28 @@
         
         section h3 {
             color: var(--highlight-color);
-            margin-top: 20px;
+            margin-top: 25px;
             margin-bottom: 10px;
             font-size: 1.4em;
         }
-
-        p, li {
-            margin-bottom: 10px;
-            color: var(--text-color);
+         section h4 {
+            color: var(--accent-color); /* Color for sub-sub-headings like component names */
+            margin-top: 15px;
+            margin-bottom: 8px;
+            font-size: 1.1em;
         }
 
-        ul, ol {
-            margin-left: 20px;
-        }
+
+        p, li { margin-bottom: 10px; color: var(--text-color); }
+        ul, ol { margin-left: 20px; margin-bottom: 15px; }
 
         code {
             background-color: var(--code-bg);
-            padding: 2px 6px;
+            padding: 0.2em 0.4em; /* Adjusted padding */
             border-radius: 4px;
-            font-family: 'Courier New', Courier, monospace;
-            color: #f0a0a0; /* Light reddish for code */
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; /* More modern mono stack */
+            color: #f0a0a0; 
+            font-size: 0.9em; /* Slightly smaller for inline code */
         }
 
         pre {
@@ -140,38 +218,53 @@
             border-radius: 5px;
             overflow-x: auto;
             margin-bottom: 15px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.9em;
+            border: 1px solid var(--border-color);
         }
+        pre code { /* Styles for code within pre, if any */
+          padding: 0;
+          background-color: transparent;
+          border-radius: 0;
+          color: inherit; /* Inherit color from pre for consistency */
+        }
+
 
         /* --- Interactive Simulator Styles --- */
         .simulator-container {
             display: flex;
             flex-wrap: wrap;
             gap: 20px;
-            align-items: flex-start;
+            align-items: stretch; /* Make children take full height if possible */
+            margin-top: 20px;
         }
 
         .controls, .circuit-diagram-area, .results {
             background-color: var(--primary-color);
-            padding: 20px;
+            padding: 15px; /* Slightly reduced padding */
             border-radius: 6px;
             border: 1px solid var(--border-color);
+            flex-grow: 1; /* Allow flex items to grow */
         }
 
         .controls {
-            flex: 1;
-            min-width: 250px;
+            flex-basis: 280px; /* Min base width for controls */
+            /* Removed min-width to allow more flexible wrapping */
         }
         .circuit-diagram-area {
-            flex: 2;
-            min-width: 300px;
-            height: 250px; /* Fixed height for canvas or SVG */
+            flex-basis: 300px; /* Min base width */
+            min-height: 200px; /* Ensure canvas area has some height */
             display: flex;
+            flex-direction: column; /* Stack title and canvas */
             align-items: center;
             justify-content: center;
         }
+        .circuit-diagram-area h4, .results h4 { /* Titles within sim areas */
+             width:100%; text-align:center; margin-bottom:10px; color:var(--text-color); font-size:1.1em;
+        }
+
         .results {
-            flex: 1;
-            min-width: 200px;
+            flex-basis: 250px; /* Min base width */
         }
 
         .controls label {
@@ -179,17 +272,18 @@
             margin-bottom: 5px;
             font-weight: bold;
             color: var(--highlight-color);
+            font-size: 0.9em;
         }
 
         .controls input[type="number"], .controls select {
-            width: calc(100% - 20px);
+            width: 100%; /* Make inputs take full width of their container */
             padding: 8px 10px;
             margin-bottom: 15px;
             border-radius: 4px;
             border: 1px solid var(--border-color);
             background-color: var(--code-bg);
             color: var(--text-color);
-            font-size: 1em;
+            font-size: 0.95em;
         }
         
         .controls button {
@@ -201,13 +295,14 @@
             cursor: pointer;
             font-size: 1em;
             transition: background-color 0.3s ease;
+            width: 100%; /* Full width button in controls */
         }
         .controls button:hover {
-            background-color: #c7304a; /* Darker accent */
+            background-color: #c7304a;
         }
 
         .results p {
-            font-size: 1.1em;
+            font-size: 0.95em; /* Slightly smaller text in results */
             margin-bottom: 8px;
         }
         .results span {
@@ -215,67 +310,118 @@
             color: var(--accent-color);
         }
 
-        /* Simple Canvas Circuit Diagram */
-        #circuitCanvas {
-            background-color: #2c3e50; /* Slightly different blue for canvas */
+        /* Canvas styling */
+        canvas {
+            background-color: #2c3e50;
             border-radius: 4px;
+            display: block; /* Ensure it behaves as a block element */
+            margin: 0 auto; /* Center canvas if its container is wider */
         }
+        
 
         /* Component Styles */
         .component-list {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* Adjusted minmax */
+            gap: 20px; /* Increased gap */
         }
         .component-item {
             background-color: var(--primary-color);
-            padding: 15px;
-            border-radius: 6px;
+            padding: 20px; /* Increased padding */
+            border-radius: 8px; /* More rounded */
             border: 1px solid var(--border-color);
+            display: flex; /* For better alignment of symbol and text */
+            flex-direction: column;
         }
-        .component-item h4 {
+        /* No h4 in this version of component item .component-item h4 was here*/
+        .component-title { /* New class for the component title */
             color: var(--accent-color);
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+            font-size: 1.2em; /* Larger title */
+            font-weight: bold;
         }
-        .component-item img {
-            max-width: 50px;
-            float: right; /* Basic symbol placeholder */
-            margin-left: 10px;
-            filter: invert(80%) sepia(30%) saturate(500%) hue-rotate(300deg); /* Make symbols visible */
+        .component-symbol-container { /* Container for SVG */
+            width: 50px; 
+            height: 30px; 
+            margin-bottom: 10px; /* Space below symbol */
+            align-self: flex-start; /* Align symbol to the start */
+        }
+        .component-symbol-container svg{
+            width: 100%;
+            height: 100%;
+            stroke: var(--text-color); /* SVG stroke color */
+            fill: none;
+        }
+
+
+        /* Table styling for Laplace/Fourier pairs */
+        .styled-table {
+            width:100%; border-collapse: collapse; margin-bottom:15px; font-size:0.9em;
+        }
+        .styled-table th, .styled-table td { 
+            text-align: left; border: 1px solid var(--border-color); padding: 8px; 
+        }
+        .styled-table th { background-color: var(--primary-color); }
+
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-secondary-color, var(--highlight-color));
+            font-size: 0.9em;
         }
 
         /* Responsive adjustments */
         @media (max-width: 768px) {
-            body {
-                flex-direction: column;
-            }
-            nav {
-                width: 100%;
-                height: auto;
-                position: static;
+            /* Sidebar takes full width and is toggled; main content always takes full width */
+            #tableOfContentsSidebar {
+                left: -100%; /* Hide fully off-screen */
+                width: 100%; /* Take full width when open */
                 border-right: none;
-                border-bottom: 2px solid var(--border-color);
             }
-            main {
-                margin-left: 0;
-                width: 100%;
-                padding: 20px;
+            #tableOfContentsSidebar.open {
+                left: 0;
+            }
+            main#mainTocContent {
+                margin-left: 0 !important; /* Ensure no margin push on mobile */
+                padding: 70px 15px 15px 15px; /* Top padding for header, less side padding */
+            }
+            main#mainTocContent > header {
+                padding: 10px 15px;
+            }
+            main#mainTocContent > header h1 {
+                font-size: 1.3em; /* Smaller title on mobile */
+            }
+            section {
+                padding: 15px;
+                margin-left: 0; margin-right: 0; /* Full width sections */
             }
             .simulator-container {
-                flex-direction: column;
+                flex-direction: column; /* Stack simulator parts vertically */
             }
             .controls, .circuit-diagram-area, .results {
-                width: 100%;
+                flex-basis: auto; /* Let them take natural height */
+                width: 100%; /* Full width */
             }
+            .circuit-diagram-area canvas, #fourierSeriesCanvas, #individualHarmonicsCanvas, #timeDomainPulseCanvas, #freqDomainSpectrumCanvas {
+                max-width: 100%; /* Ensure canvases scale down */
+                height: auto; /* Maintain aspect ratio if width shrinks */
+            }
+             #fourierSeriesCanvas { max-height: 180px; } /* Specific constraints if needed */
+             #individualHarmonicsCanvas { max-height: 120px; }
+             #timeDomainPulseCanvas, #freqDomainSpectrumCanvas {max-height:150px;}
         }
 
     </style>
 </head>
 <body>
-    <nav id="tableOfContents">
-        <h2>Table of Contents</h2>
-        <ul>
-            <li><a href="#intro">Introduction</a></li>
+    <nav id="tableOfContentsSidebar">
+        <h2>Table of Contents <button id="closeTocSidebarBtn" aria-label="Close Table of Contents">×</button></h2>
+        <ul id="tocList">
+            <li><a href="#intro" class="active-toc-link">Introduction</a></li>
             <li><a href="#components">Electronic Components</a></li>
             <li><a href="#simulator">Circuit Simulator Demo</a></li>
             <li><a href="#topic1">1: Basic Concepts</a></li>
@@ -300,19 +446,22 @@
             <li><a href="#appendixA">A: Simultaneous Equations & Matrix Inversion</a></li>
             <li><a href="#appendixB">B: Complex Numbers</a></li>
             <li><a href="#appendixC">C: Mathematical Formulas</a></li>
+            <li><a href="#finalThoughts">Final Thoughts</a></li>
         </ul>
     </nav>
 
-    <main>
+    <div id="tocOverlay"></div>
+
+    <main id="mainTocContent">
         <header>
+            <button id="tocMenuToggleBtn" aria-label="Toggle Table of Contents menu">☰</button>
             <h1>Interactive Electronics Learning Hub</h1>
-            <p>Explore the fascinating world of electronic circuits and systems!</p>
         </header>
 
         <section id="intro">
             <h2>Welcome!</h2>
-            <p>This page is your interactive guide to understanding electronic systems. From fundamental concepts to advanced analysis techniques, we'll cover a wide range of topics. Use the navigation panel to jump to specific sections. Explore component descriptions and try out the simple circuit simulator to see laws like Ohm's Law in action.</p>
-            <p><strong>Note:</strong> The simulator provided is a simplified demonstration tool and not a replacement for professional simulation software like MultiSIM. Its purpose is to illustrate basic principles.</p>
+            <p>This page is your interactive guide to understanding electronic systems. From fundamental concepts to advanced analysis techniques, we'll cover a wide range of topics. Use the navigation panel (click the ☰ icon) to jump to specific sections. Explore component descriptions and try out the simple circuit simulators to see laws like Ohm's Law in action.</p>
+            <p><strong>Note:</strong> The simulators provided are simplified demonstration tools and not a replacement for professional simulation software. Their purpose is to illustrate basic principles and make learning more engaging.</p>
         </section>
 
         <section id="components">
@@ -320,49 +469,91 @@
             <p>Understanding the role of each component is crucial. Here are some common ones:</p>
             <div class="component-list">
                 <div class="component-item">
-                    <!-- Placeholder for resistor symbol -->
-                    <div style="width:60px; height:24px; float:right; margin-left:10px;">
-                        <svg viewBox="0 0 60 24" xmlns="http://www.w3.org/2000/svg" style="display: block; stroke: var(--text-color); stroke-width:1.5; fill:none;">
-                            <path d="M0 12 L10 12 L15 6 L25 18 L35 6 L45 18 L50 12 L60 12"/>
-                        </svg>
-                    </div>                   
+                    <div class="component-symbol-container">
+                        <svg viewBox="0 0 60 24"><path d="M0 12 L10 12 L15 6 L25 18 L35 6 L45 18 L50 12 L60 12" stroke-width="1.5"/></svg>
+                    </div>
+                    <div class="component-title">Resistor</div>
                     <p>Opposes the flow of electric current. Measured in Ohms (Ω).</p>
                 </div>
                 <div class="component-item">
-                     <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCAxMDAgNDAiPjxwYXRoIGQ9Ik0wIDIwIEw0MCAyME00MCA1IEw0MCAzNU02MCA1IEw2MCAzNU02MCAyMCBMMTAwIDIwIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+PC9zdmc+" alt="Capacitor Symbol">
-                    <h4>Capacitor</h4>
+                    <div class="component-symbol-container" style="width:40px; height:40px;"> <!-- Adjusted size for capacitor -->
+                         <svg viewBox="0 0 40 40"><line x1="0" y1="20" x2="15" y2="20" stroke-width="2"/><line x1="15" y1="5" x2="15" y2="35" stroke-width="2"/><line x1="25" y1="5" x2="25" y2="35" stroke-width="2"/><line x1="25" y1="20" x2="40" y2="20" stroke-width="2"/></svg>
+                    </div>
+                    <div class="component-title">Capacitor</div>
                     <p>Stores electrical energy in an electric field. Measured in Farads (F).</p>
                 </div>
                 <div class="component-item">
-                    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCAxMDAgNDAiPjxwYXRoIGQ9Ik0wIDIwIEwxNSAyMEEyMCAyMCAwIDAgMCA1NSAyMEEyMCAyMCAwIDAgMCA5NSAyMEwxMDAgMjAiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjwvc3ZnPg==" alt="Inductor Symbol">
-                    <h4>Inductor</h4>
+                     <div class="component-symbol-container" style="width:60px; height:30px;">
+                        <svg viewBox="0 0 60 30"><path d="M0 15 L10 15 A10 10 0 0 0 20 15 A10 10 0 0 0 30 15 A10 10 0 0 0 40 15 A10 10 0 0 0 50 15 L60 15" stroke-width="2" stroke-linecap="round"/></svg>
+                    </div>
+                    <div class="component-title">Inductor</div>
                     <p>Stores energy in a magnetic field when electric current flows through it. Measured in Henries (H).</p>
                 </div>
                 <div class="component-item">
-                     <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCAxMDAgNDAiPjxwYXRoIGQ9Ik0wIDIwIEwzMCAyMEw1MCA1IEw1MCAzNSBMMzAgMjBNNTAgMjAgTDEwMCAyMCIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjwvc3ZnPg==" alt="Diode Symbol">
-                    <h4>Diode</h4>
-                    <p>Allows current to flow in one direction primarily.</p>
+                    <div class="component-symbol-container" style="width:50px; height:40px;">
+                        <svg viewBox="0 0 50 40"><line x1="0" y1="20" x2="15" y2="20" stroke-width="2"/><polygon points="15,5 15,35 35,20" stroke-width="2" stroke="var(--text-color)" fill="var(--text-color)"/><line x1="35" y1="20" x2="50" y2="20" stroke-width="2"/><line x1="35" y1="5" x2="35" y2="35" stroke-width="2"/><!-- Cathode bar --></svg>
+                    </div>
+                    <div class="component-title">Diode</div>
+                    <p>Allows current to flow primarily in one direction (from anode to cathode).</p>
                 </div>
                 <div class="component-item">
-                    <!-- Placeholder for Transistor symbol (BJT) -->
-                     <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCAxMDAgNDAiPjxnIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiPjxjaXJjbGUgY3g9IjUwIiBjeT0iMjAiIHI9IjE4Ii8+PHBhdGggZD0iTTUwIDIwIEwyMCAyME01MCAyIEw3MCAxME01MCAzOCBMNzAgMzBNNzAgMTUgTDcwIDI1IiAvPjxwYXRoIGQ9Ik02NSAxMiBMNzAgMTAgTDc1IDEyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L2c+PC9zdmc+" alt="Transistor Symbol">
-                    <h4>Transistor (BJT/FET)</h4>
-                    <p>Amplifies or switches electronic signals and electrical power.</p>
+                    <div class="component-symbol-container" style="width:60px; height:50px;"> <!-- BJT NPN example -->
+                        <svg viewBox="0 0 60 50">
+                            <circle cx="30" cy="25" r="14" stroke-width="1.5"/>
+                            <line x1="30" y1="25" x2="10" y2="25" stroke-width="1.5"/> <!-- Base -->
+                            <line x1="30" y1="25" x2="45" y2="10" stroke-width="1.5"/> <!-- Collector -->
+                            <line x1="30" y1="25" x2="45" y2="40" stroke-width="1.5"/> <!-- Emitter -->
+                            <polygon points="45,40 40,33 50,33" fill="var(--text-color)"/> <!-- Emitter arrow -->
+                             <text x="0" y="28" font-size="8">B</text>
+                             <text x="48" y="10" font-size="8">C</text>
+                             <text x="48" y="48" font-size="8">E</text>
+                        </svg>
+                    </div>
+                    <div class="component-title">Transistor (BJT)</div>
+                    <p>Amplifies or switches electronic signals and electrical power. (Symbol for NPN BJT shown).</p>
                 </div>
                 <div class="component-item">
-                     <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIHZpZXdCb3g9IjAgMCAxMDAgNzAiPjxwYXRoIGQ9Ik0yMCA1IEw4MCAzNUwyMCA2NUwyMCA1WiIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0yNSAxNSBMMzUgMTVNMzAgMTBMMzAgMjBNNzIgMzAgTDc4IDMwTTI1IDU1IEwzNSA1NU04MCAzNSBMMTAwIDM1IiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+" alt="Op-Amp Symbol">
-                    <h4>Operational Amplifier (Op-Amp)</h4>
+                    <div class="component-symbol-container" style="width:60px; height:50px;">
+                        <svg viewBox="0 0 60 50">
+                            <polygon points="15,10 45,25 15,40" stroke-width="1.5"/>
+                            <line x1="15" y1="18" x2="5" y2="18" stroke-width="1.5"/> <!-- Inverting input -->
+                            <line x1="15" y1="32" x2="5" y2="32" stroke-width="1.5"/> <!-- Non-inverting input -->
+                            <line x1="45" y1="25" x2="55" y2="25" stroke-width="1.5"/> <!-- Output -->
+                            <text x="17" y="22" font-size="10">-</text>
+                            <text x="17" y="37" font-size="10">+</text>
+                        </svg>
+                    </div>
+                    <div class="component-title">Operational Amplifier (Op-Amp)</div>
                     <p>A high-gain voltage amplifier with differential input. Basis for many analog circuits.</p>
                 </div>
                  <div class="component-item">
-                    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDYwIDQwIj48cmVjdCB4PSI1IiB5PSI1IiB3aWR0aD0iNTAiIGhlaWdodD0iMzAiIHJ4PSI1IiByeT0iNSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0wIDEwIEw1IDEwTTYwIDEwIEw1NSAxME0wIDIwIEw1IDIwTTYwIDIwIEw1NSAyME0wIDMwIEw1IDMwTTYwIDMwIEw1NSAzMCIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIvPjwvc3ZnPg==" alt="IC Symbol">
-                    <h4>Integrated Circuit (IC)</h4>
+                    <div class="component-symbol-container" style="width:50px; height:40px;">
+                        <svg viewBox="0 0 50 40">
+                            <rect x="5" y="5" width="40" height="30" rx="3" ry="3" stroke-width="1.5"/>
+                            <line x1="0" y1="12" x2="5" y2="12" stroke-width="1.5"/>
+                            <line x1="0" y1="20" x2="5" y2="20" stroke-width="1.5"/>
+                            <line x1="0" y1="28" x2="5" y2="28" stroke-width="1.5"/>
+                            <line x1="45" y1="12" x2="50" y2="12" stroke-width="1.5"/>
+                            <line x1="45" y1="20" x2="50" y2="20" stroke-width="1.5"/>
+                            <line x1="45" y1="28" x2="50" y2="28" stroke-width="1.5"/>
+                        </svg>
+                    </div>
+                    <div class="component-title">Integrated Circuit (IC)</div>
                     <p>A set of electronic circuits on one small flat piece (chip) of semiconductor material.</p>
                 </div>
                 <div class="component-item">
-                    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDgwIDQwIj48cGF0aCBkPSJNMCAyMCBMMjAgMjBNMjAgMTIgTDIwIDI4TTMwIDEyIEwzMCAyOE02MCAyMCBMODAgMjBNMjAgMTIgQzI1IDEgMzUgMSAzMCAxMk0yMCAyOEMyNSAzOSAzNSAzOSAzMCAyOCIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjwvc3ZnPg==" alt="Voltage Source Symbol">
-                    <h4>Voltage Source (DC/AC)</h4>
-                    <p>Provides a potential difference (voltage). Can be DC (direct current) or AC (alternating current).</p>
+                     <div class="component-symbol-container" style="width:50px; height:40px;">
+                        <svg viewBox="0 0 50 40">
+                            <circle cx="25" cy="20" r="12" stroke-width="1.5"/>
+                            <line x1="25" y1="12" x2="25" y2="8"  stroke-width="1.5"/><!-- + -->
+                            <line x1="22" y1="10" x2="28" y2="10" stroke-width="1.5"/>
+                            <line x1="22" y1="30" x2="28" y2="30" stroke-width="1.5"/><!-- - -->
+                            <line x1="0" y1="20" x2="13" y2="20" stroke-width="1.5"/>
+                            <line x1="37" y1="20" x2="50" y2="20" stroke-width="1.5"/>
+                        </svg>
+                    </div>
+                    <div class="component-title">Voltage Source (DC)</div>
+                    <p>Provides a constant potential difference (voltage).</p>
                 </div>
             </div>
         </section>
@@ -372,34 +563,25 @@
             <p>This is a very basic interactive tool to demonstrate Ohm's Law (V = IR) in a simple DC circuit with one resistor. Adjust the voltage and resistance to see the current change.</p>
             <div class="simulator-container">
                 <div class="controls">
-                    <h3>Controls</h3>
+                    <h4>Controls</h4>
                     <label for="voltage">Voltage (V):</label>
                     <input type="number" id="voltage" value="12" min="0" step="0.1">
                     
                     <label for="resistance">Resistance (R1 in Ω):</label>
                     <input type="number" id="resistance" value="100" min="1" step="1">
                     
-                    <!-- For a more advanced version, you could add more components -->
-                    <!-- <label for="resistance2">Resistance (R2 in Ω):</label>
-                    <input type="number" id="resistance2" value="0" min="0" step="1">
-                    <label for="connectionType">Connection:</label>
-                    <select id="connectionType">
-                        <option value="series">Series</option>
-                        <option value="parallel">Parallel</option>
-                    </select> -->
-                    <button id="simulateBtn">Simulate</button>
+                    <button id="simulateBtn">Recalculate</button> <!-- Changed button text -->
                 </div>
 
                 <div class="circuit-diagram-area">
-                    <h3>Circuit Diagram</h3>
-                    <canvas id="circuitCanvas" width="280" height="200"></canvas>
+                    <h4>Circuit Diagram</h4>
+                    <canvas id="circuitCanvas" width="260" height="180"></canvas> <!-- Adjusted size -->
                 </div>
 
                 <div class="results">
-                    <h3>Results</h3>
+                    <h4>Results</h4>
                     <p>Current (I): <span id="currentVal">0 A</span></p>
                     <p>Power (P): <span id="powerVal">0 W</span></p>
-                    <!-- <p>Total Resistance (Rt): <span id="totalResistanceVal">0 Ω</span></p> -->
                 </div>
             </div>
         </section>
@@ -3737,14 +3919,97 @@ a<sub>n1</sub>x<sub>1</sub> + a<sub>n2</sub>x<sub>2</sub> + ... + a<sub>nn</sub>
 
 
 
-
         <footer>
             <p>&copy; 2025 Interactive Guides. Education and passion for electronics. -Sebastian</p>
         </footer>
     </main>
 
     <script>
-        // --- Smooth Scrolling for Navigation ---
+    // Ensure this script block is at the very end of your <body>
+
+    // --- TOC Sidebar Toggle Logic ---
+    const tocMenuToggleBtn = document.getElementById('tocMenuToggleBtn');
+    const closeTocSidebarBtn = document.getElementById('closeTocSidebarBtn');
+    const tocSidebar = document.getElementById('tableOfContentsSidebar');
+    const tocOverlay = document.getElementById('tocOverlay');
+    const mainTocContent = document.getElementById('mainTocContent'); 
+    const tocSidebarWidth = 280; 
+
+    function toggleTocSidebar(forceState) {
+        if (!tocSidebar || !tocOverlay) return; // Safety check
+        const isOpen = tocSidebar.classList.contains('open');
+        const shouldOpen = forceState !== undefined ? forceState : !isOpen;
+
+        const mainHeader = document.querySelector('main#mainTocContent > header');
+
+        if (shouldOpen) {
+            tocSidebar.classList.add('open');
+            tocOverlay.classList.add('active');
+            if (tocMenuToggleBtn) tocMenuToggleBtn.setAttribute('aria-expanded', 'true');
+            if (window.innerWidth > 768) { // Only push content on wider screens
+                // mainTocContent.style.marginLeft = `${tocSidebarWidth}px`;
+                // if(mainHeader) mainHeader.style.left = `${tocSidebarWidth}px`;
+                // if(mainHeader) mainHeader.style.width = `calc(100% - ${tocSidebarWidth}px)`;
+            }
+        } else {
+            tocSidebar.classList.remove('open');
+            tocOverlay.classList.remove('active');
+            if (tocMenuToggleBtn) tocMenuToggleBtn.setAttribute('aria-expanded', 'false');
+            // mainTocContent.style.marginLeft = '0px';
+            // if(mainHeader) mainHeader.style.left = '0px';
+            // if(mainHeader) mainHeader.style.width = '100%';
+        }
+    }
+
+    if (tocMenuToggleBtn) tocMenuToggleBtn.addEventListener('click', () => toggleTocSidebar());
+    if (closeTocSidebarBtn) closeTocSidebarBtn.addEventListener('click', () => toggleTocSidebar(false));
+    if (tocOverlay) tocOverlay.addEventListener('click', () => toggleTocSidebar(false));
+
+    const tocLinks = document.querySelectorAll('#tableOfContentsSidebar ul li a');
+    tocLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            // Smooth scroll handled by CSS `scroll-behavior: smooth;` on html element
+            // e.preventDefault(); // Keep for manual smooth scroll if CSS doesn't work well
+            // const targetId = link.getAttribute('href');
+            // const targetElement = document.querySelector(targetId);
+            // if (targetElement) {
+            //    targetElement.scrollIntoView({ behavior: 'smooth' });
+            // }
+            
+            tocLinks.forEach(l => l.classList.remove('active-toc-link'));
+            link.classList.add('active-toc-link');
+            
+            if (tocSidebar.classList.contains('open')) {
+                toggleTocSidebar(false);
+            }
+        });
+    });
+
+    const mainSections = document.querySelectorAll('main#mainTocContent section[id]');
+    const headerHeight = (document.querySelector('main#mainTocContent > header') || {offsetHeight: 60}).offsetHeight; // Default if header not found
+
+    function updateActiveTocLinkOnScroll() {
+        let currentSectionId = 'intro'; // Default to intro
+        const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+
+        mainSections.forEach(section => {
+            const sectionTop = section.offsetTop - headerHeight - 20; // 20px buffer
+            if (scrollPosition >= sectionTop) {
+                currentSectionId = section.getAttribute('id');
+            }
+        });
+        
+        tocLinks.forEach(link => {
+            link.classList.remove('active-toc-link');
+            if (link.getAttribute('href') === `#${currentSectionId}`) {
+                link.classList.add('active-toc-link');
+            }
+        });
+    }
+    window.addEventListener('scroll', updateActiveTocLinkOnScroll);
+    // --- END TOC Sidebar Logic ---
+
+    // --- Smooth Scrolling for Navigation ---
         document.querySelectorAll('nav a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 e.preventDefault();
@@ -4972,6 +5237,8 @@ a<sub>n1</sub>x<sub>1</sub> + a<sub>n2</sub>x<sub>2</sub> + ... + a<sub>nn</sub>
         if (typeof calculateComplexOperations === "function") {
             calculateComplexOperations();
         }
+
+    
 
     </script>
 </body>
