@@ -4009,908 +4009,1236 @@ a<sub>n1</sub>x<sub>1</sub> + a<sub>n2</sub>x<sub>2</sub> + ... + a<sub>nn</sub>
     window.addEventListener('scroll', updateActiveTocLinkOnScroll);
     // --- END TOC Sidebar Logic ---
 
+    // --- Smooth Scrolling for Navigation ---
+        document.querySelectorAll('nav a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+                // Optional: Highlight active link
+                document.querySelectorAll('nav a').forEach(link => link.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
 
+        // --- Simple Ohm's Law Simulator Logic ---
+        const voltageInput = document.getElementById('voltage');
+        const resistanceInput = document.getElementById('resistance');
+        // const resistance2Input = document.getElementById('resistance2');
+        // const connectionTypeSelect = document.getElementById('connectionType');
+        const simulateBtn = document.getElementById('simulateBtn');
+        
+        const currentValDisplay = document.getElementById('currentVal');
+        const powerValDisplay = document.getElementById('powerVal');
+        // const totalResistanceValDisplay = document.getElementById('totalResistanceVal');
 
-    // --- Simple Ohm's Law Simulator Logic ---
-    const voltageInput = document.getElementById('voltage');
-    const resistanceInput = document.getElementById('resistance');
-    const simulateBtn = document.getElementById('simulateBtn');
-    const currentValDisplay = document.getElementById('currentVal');
-    const powerValDisplay = document.getElementById('powerVal');
-    const circuitCanvas = document.getElementById('circuitCanvas');
-    
-    if (circuitCanvas) {
+        const circuitCanvas = document.getElementById('circuitCanvas');
         const ctx = circuitCanvas.getContext('2d');
 
-        function drawSimpleOhmCircuit(voltage, resistance, current) {
-            if (!ctx) return;
+        function drawSimpleCircuit(voltage, resistance, current) {
             ctx.clearRect(0, 0, circuitCanvas.width, circuitCanvas.height);
-            const pad = 15;
-            const battY = circuitCanvas.height / 2;
-            const battW = 15; const battHshort = 10; const battHlong = 20;
-            const resX = circuitCanvas.width / 2 + 20;
-            const wireYtop = battY - 30; const wireYbottom = battY + 30;
-
+            
+            // Style
             ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
             ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
-            ctx.lineWidth = 1.5;
-            ctx.font = "10px Segoe UI";
+            ctx.lineWidth = 2;
+            ctx.font = "12px Segoe UI";
 
             // Battery
             ctx.beginPath();
-            ctx.moveTo(pad + battW, battY - battHlong/2); ctx.lineTo(pad + battW, battY + battHlong/2); // Long plate
-            ctx.moveTo(pad, battY - battHshort/2); ctx.lineTo(pad, battY + battHshort/2); // Short plate
-            ctx.fillText("+", pad + battW + 3, battY - battHlong/2 - 2);
-            ctx.fillText("-", pad - 8, battY - battHshort/2 -2);
+            ctx.moveTo(50, 50); ctx.lineTo(50, 150); // Left plate
+            ctx.moveTo(40, 60); ctx.lineTo(60, 60); // Top small plate
+            ctx.moveTo(40, 75); ctx.lineTo(60, 75); // Top long plate
+            ctx.fillText("+", 65, 70);
+            ctx.fillText("-", 65, 140);
             ctx.stroke();
-            ctx.fillText(`${voltage.toFixed(1)}V`, pad, battY + battHlong/2 + 15);
-
-            // Wires to resistor
-            ctx.beginPath();
-            ctx.moveTo(pad + battW, battY - battHlong/2); ctx.lineTo(resX, battY - battHlong/2); // Top wire
-            ctx.moveTo(pad + battW, battY + battHlong/2); ctx.lineTo(resX, battY + battHlong/2); // Bottom wire
-            ctx.stroke();
-
-            // Resistor (zigzag)
-            const resW = 40; const resH = 20;
-            const zigX = resX + 5; const zigY = battY - resH/2;
-            ctx.beginPath();
-            ctx.moveTo(zigX, zigY + resH/2); // Connect to top wire
-            ctx.lineTo(zigX + resW*0.1, zigY + resH/2);
-            ctx.lineTo(zigX + resW*0.25, zigY); 
-            ctx.lineTo(zigX + resW*0.45, zigY + resH);
-            ctx.lineTo(zigX + resW*0.65, zigY);
-            ctx.lineTo(zigX + resW*0.85, zigY + resH);
-            ctx.lineTo(zigX + resW,     zigY + resH/2); // Connect to wire end
-            ctx.lineTo(zigX + resW*1.1, zigY + resH/2);
-            ctx.stroke();
-            ctx.fillText(`${resistance.toFixed(1)}Ω`, zigX + resW/2 - 10, zigY - 5);
             
-            // Connect resistor end to bottom wire
+            // Wires
             ctx.beginPath();
-            ctx.moveTo(zigX + resW*1.1, zigY + resH/2); ctx.lineTo(zigX + resW*1.1 + 20, zigY + resH/2); // To right edge
-            ctx.lineTo(zigX + resW*1.1 + 20, battY + battHlong/2); // Down
-            ctx.lineTo(resX, battY + battHlong/2); // To connect to bottom wire from battery
+            ctx.moveTo(50, 50); ctx.lineTo(150, 50); // Top wire
+            ctx.moveTo(50, 150); ctx.lineTo(150, 150); // Bottom wire
+            ctx.moveTo(150, 50); ctx.lineTo(150, 70); // Wire to resistor top
+            ctx.moveTo(150, 130); ctx.lineTo(150, 150); // Wire from resistor bottom
             ctx.stroke();
 
+            // Resistor (simple box)
+            ctx.strokeRect(140, 70, 20, 60); // x, y, width, height
+            ctx.fillText(`${resistance.toFixed(1)}Ω`, 170, 105);
+            
+            // Voltage source label
+            ctx.fillText(`${voltage.toFixed(1)}V`, 10, 100);
 
             // Current arrow (simple) & label
-            if (current > 0 && isFinite(current)) {
-                const arrowY = battY - battHlong/2 - 10;
+            if (current > 0) {
                 ctx.beginPath();
-                ctx.moveTo(resX - 30, arrowY); ctx.lineTo(resX -10, arrowY); // Arrow line
-                ctx.lineTo(resX - 15, arrowY - 3); ctx.moveTo(resX -10, arrowY); ctx.lineTo(resX -15, arrowY + 3); // Arrow head
+                ctx.moveTo(100, 40); ctx.lineTo(120, 40); // Arrow line
+                ctx.lineTo(115, 35); ctx.moveTo(120, 40); ctx.lineTo(115, 45); // Arrow head
                 ctx.stroke();
-                ctx.fillText(`${current.toFixed(3)}A`, resX - 35, arrowY - 5);
+                ctx.fillText(`${current.toFixed(3)}A`, 95, 30);
             }
         }
 
-        function calculateAndDisplayOhmLaw() {
-            if (!voltageInput || !resistanceInput || !currentValDisplay || !powerValDisplay) return;
+        function calculateAndDisplay() {
             const V = parseFloat(voltageInput.value);
-            const R1_ohm = parseFloat(resistanceInput.value);
+            const R1 = parseFloat(resistanceInput.value);
+            // const R2 = parseFloat(resistance2Input.value);
+            // const connection = connectionTypeSelect.value;
 
-            if (isNaN(V) || isNaN(R1_ohm) || R1_ohm <= 0) {
-                currentValDisplay.textContent = "Invalid";
-                powerValDisplay.textContent = "Invalid";
-                if (typeof drawSimpleOhmCircuit === 'function') drawSimpleOhmCircuit(0,0,0);
+            if (isNaN(V) || isNaN(R1) || R1 <= 0) {
+                currentValDisplay.textContent = "Invalid Input";
+                powerValDisplay.textContent = "Invalid Input";
+                // totalResistanceValDisplay.textContent = "N/A";
+                drawSimpleCircuit(0,0,0);
                 return;
             }
-            
-            const I_ohm = V / R1_ohm;
-            const P_ohm = V * I_ohm; 
 
-            currentValDisplay.textContent = `${I_ohm.toFixed(3)} A`;
-            powerValDisplay.textContent = `${P_ohm.toFixed(3)} W`;
-            if (typeof drawSimpleOhmCircuit === 'function') drawSimpleOhmCircuit(V, R1_ohm, I_ohm);
-        }
-
-        if (simulateBtn) simulateBtn.addEventListener('click', calculateAndDisplayOhmLaw);
-        if (voltageInput) voltageInput.addEventListener('input', calculateAndDisplayOhmLaw);
-        if (resistanceInput) resistanceInput.addEventListener('input', calculateAndDisplayOhmLaw);
-        
-    } // End if(circuitCanvas)
-    // --- END Ohm's Law Simulator ---
-
-
-    // --- KCL Visualizer Demo (Chapter 2) ---
-    const kclIs1Input = document.getElementById('kclIs1');
-    const kclIs2Input = document.getElementById('kclIs2');
-    const kclR1Input_ch2 = document.getElementById('kclR1'); // Renamed to avoid conflict
-    const kclSimulateBtn = document.getElementById('kclSimulateBtn');
-
-    const kclVnodeDisplay = document.getElementById('kclVnode');
-    const kclIr1Display = document.getElementById('kclIr1');
-    const kclSumInDisplay = document.getElementById('kclSumIn');
-    const kclSumOutDisplay = document.getElementById('kclSumOut');
-    const kclBalanceDisplay = document.getElementById('kclBalance');
-    const kclCanvas = document.getElementById('kclCanvas');
-
-    if (kclCanvas) { 
-        const kclCtx = kclCanvas.getContext('2d');
-
-        function drawKCLDiagram(is1, is2, ir1, vNode, r1Val) { // Added r1Val
-            if (!kclCtx) return;
-            kclCtx.clearRect(0, 0, kclCanvas.width, kclCanvas.height);
-            kclCtx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
-            kclCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
-            kclCtx.lineWidth = 1.5;
-            kclCtx.font = "10px Segoe UI";
-            
-            const nodeX = kclCanvas.width / 2;
-            const nodeY = kclCanvas.height / 2 - 20; // Central node a bit higher
-
-            // Node
-            kclCtx.beginPath();
-            kclCtx.arc(nodeX, nodeY, 4, 0, 2 * Math.PI);
-            kclCtx.fill();
-            kclCtx.fillText(`Vn=${vNode.toFixed(1)}V`, nodeX + 10, nodeY - 8);
-
-            // Current Source 1 (Is1) - from left
-            const is1StartX = nodeX - 90; const is1SourceRadius = 12;
-            const is1WireEndX = nodeX - 4;
-            kclCtx.beginPath();
-            kclCtx.arc(is1StartX + is1SourceRadius, nodeY, is1SourceRadius, 0, 2 * Math.PI); 
-            kclCtx.moveTo(is1StartX + is1SourceRadius - (is1SourceRadius*0.4), nodeY); kclCtx.lineTo(is1StartX + is1SourceRadius + (is1SourceRadius*0.4), nodeY); // horizontal line
-            kclCtx.moveTo(is1StartX + is1SourceRadius + (is1SourceRadius*0.4), nodeY); kclCtx.lineTo(is1StartX + is1SourceRadius + (is1SourceRadius*0.4) -5, nodeY-3); // arrowhead
-            kclCtx.moveTo(is1StartX + is1SourceRadius + (is1SourceRadius*0.4), nodeY); kclCtx.lineTo(is1StartX + is1SourceRadius + (is1SourceRadius*0.4) -5, nodeY+3);
-            kclCtx.moveTo(is1StartX + 2*is1SourceRadius, nodeY); kclCtx.lineTo(is1WireEndX, nodeY); 
-            kclCtx.stroke();
-            kclCtx.fillText(`Is1=${is1.toFixed(2)}A`, is1StartX - 5, nodeY - is1SourceRadius - 2);
-
-            // Current Source 2 (Is2) - from top
-            const is2StartY = nodeY - 70; const is2SourceRadius = 12;
-            const is2WireEndY = nodeY - 4;
-            kclCtx.beginPath();
-            kclCtx.arc(nodeX, is2StartY + is2SourceRadius, is2SourceRadius, 0, 2 * Math.PI);
-            kclCtx.moveTo(nodeX, is2StartY + is2SourceRadius - (is2SourceRadius*0.4)); kclCtx.lineTo(nodeX, is2StartY + is2SourceRadius + (is2SourceRadius*0.4)); // vertical line
-            kclCtx.moveTo(nodeX, is2StartY + is2SourceRadius + (is2SourceRadius*0.4)); kclCtx.lineTo(nodeX - 3, is2StartY + is2SourceRadius + (is2SourceRadius*0.4) -5); // arrowhead
-            kclCtx.moveTo(nodeX, is2StartY + is2SourceRadius + (is2SourceRadius*0.4)); kclCtx.lineTo(nodeX + 3, is2StartY + is2SourceRadius + (is2SourceRadius*0.4) -5);
-            kclCtx.moveTo(nodeX, is2StartY + 2*is2SourceRadius); kclCtx.lineTo(nodeX, is2WireEndY); 
-            kclCtx.stroke();
-            kclCtx.fillText(`Is2=${is2.toFixed(2)}A`, nodeX + is2SourceRadius + 2, is2StartY + is2SourceRadius +3);
-            
-            // Resistor R1 - down to ground
-            const r1TopY = nodeY + 4;
-            const r1ResHeight = 20; const r1ResWidth = 30;
-            const r1EndY = kclCanvas.height - 30;
-            kclCtx.beginPath();
-            kclCtx.moveTo(nodeX, r1TopY); kclCtx.lineTo(nodeX, r1TopY + 15); // wire to resistor
-            // Zigzag for resistor
-            const rZigY = r1TopY + 15;
-            kclCtx.lineTo(nodeX - r1ResWidth/4, rZigY + r1ResHeight*0.2);
-            kclCtx.lineTo(nodeX + r1ResWidth/4, rZigY + r1ResHeight*0.4);
-            kclCtx.lineTo(nodeX - r1ResWidth/4, rZigY + r1ResHeight*0.6);
-            kclCtx.lineTo(nodeX + r1ResWidth/4, rZigY + r1ResHeight*0.8);
-            kclCtx.lineTo(nodeX, rZigY + r1ResHeight);
-            kclCtx.lineTo(nodeX, r1EndY); // wire from resistor
-            // Ground symbol
-            kclCtx.moveTo(nodeX - 10, r1EndY); kclCtx.lineTo(nodeX + 10, r1EndY);
-            kclCtx.moveTo(nodeX - 6, r1EndY + 4); kclCtx.lineTo(nodeX + 6, r1EndY + 4);
-            kclCtx.moveTo(nodeX - 2, r1EndY + 8); kclCtx.lineTo(nodeX + 2, r1EndY + 8);
-            kclCtx.stroke();
-            kclCtx.fillText(`R1=${r1Val}Ω`, nodeX + 10, rZigY + r1ResHeight/2 + 3);
-            kclCtx.fillText(`Ir1=${ir1.toFixed(2)}A ↓`, nodeX - 45, r1TopY + 25);
-        }
-
-        function analyzeKCLNode() {
-            if (!kclIs1Input || !kclIs2Input || !kclR1Input_ch2 || !kclVnodeDisplay || !kclIr1Display ||
-                !kclSumInDisplay || !kclSumOutDisplay || !kclBalanceDisplay) return;
-
-            const Is1 = parseFloat(kclIs1Input.value);
-            const Is2 = parseFloat(kclIs2Input.value);
-            const R1_val = parseFloat(kclR1Input_ch2.value); // Use the renamed variable
-
-            if (isNaN(Is1) || isNaN(Is2) || isNaN(R1_val) || R1_val <= 0) {
-                kclVnodeDisplay.textContent = "Invalid"; kclIr1Display.textContent = "Input";
-                kclSumInDisplay.textContent = "N/A"; kclSumOutDisplay.textContent = "N/A";
-                kclBalanceDisplay.textContent = "Invalid Input"; kclBalanceDisplay.style.color = "var(--accent-color)";
-                if (kclCtx) kclCtx.clearRect(0, 0, kclCanvas.width, kclCanvas.height);
-                return;
+            let Rt = R1; // For now, only single resistor
+            // Example for series/parallel (if you extend)
+            /*
+            if (R2 > 0) {
+                if (connection === 'series') {
+                    Rt = R1 + R2;
+                } else if (connection === 'parallel') {
+                    if (R1 > 0 && R2 > 0) Rt = (R1 * R2) / (R1 + R2);
+                    else if (R1 > 0) Rt = R1;
+                    else Rt = R2; // only one is >0
+                }
             }
-            const Vnode = (Is1 + Is2) * R1_val;
-            const Ir1 = Vnode / R1_val; 
-            const sumIn = Is1 + Is2;
-            const sumOut = Ir1;
+            */
+            
+            const I = V / Rt;
+            const P = V * I; // or I*I*R or V*V/R
 
-            kclVnodeDisplay.textContent = Vnode.toFixed(3);
-            kclIr1Display.textContent = Ir1.toFixed(3);
-            kclSumInDisplay.textContent = sumIn.toFixed(3);
-            kclSumOutDisplay.textContent = sumOut.toFixed(3);
+            currentValDisplay.textContent = `${I.toFixed(3)} A`;
+            powerValDisplay.textContent = `${P.toFixed(3)} W`;
+            // totalResistanceValDisplay.textContent = `${Rt.toFixed(2)} Ω`;
 
-            if (Math.abs(sumIn - sumOut) < 1e-6) {
-                kclBalanceDisplay.textContent = "Balanced ✔️"; kclBalanceDisplay.style.color = "lightgreen";
-            } else {
-                kclBalanceDisplay.textContent = "Not Balanced ❌"; kclBalanceDisplay.style.color = "var(--accent-color)";
-            }
-            drawKCLDiagram(Is1, Is2, Ir1, Vnode, R1_val); // Pass R1_val
+            drawSimpleCircuit(V, Rt, I);
         }
 
-        if (kclSimulateBtn) kclSimulateBtn.addEventListener('click', analyzeKCLNode);
-        [kclIs1Input, kclIs2Input, kclR1Input_ch2].forEach(input => {
-            if(input) input.addEventListener('input', analyzeKCLNode);
+        simulateBtn.addEventListener('click', calculateAndDisplay);
+        // Initial calculation and draw
+        calculateAndDisplay();
+
+        // Update on input change for "real-time" feel
+        voltageInput.addEventListener('input', calculateAndDisplay);
+        resistanceInput.addEventListener('input', calculateAndDisplay);
+        // resistance2Input.addEventListener('input', calculateAndDisplay);
+        // connectionTypeSelect.addEventListener('change', calculateAndDisplay);
+
+
+        // --- Active Nav Link on Scroll (More advanced, optional) ---
+        const sections = document.querySelectorAll('main section');
+        const navLinks = document.querySelectorAll('nav ul li a');
+
+        window.addEventListener('scroll', () => {
+            let currentSectionId = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (pageYOffset >= (sectionTop - sectionHeight / 3)) { // Adjust threshold as needed
+                    currentSectionId = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${currentSectionId}`) {
+                    link.classList.add('active');
+                }
+            });
         });
-        if (typeof analyzeKCLNode === "function") analyzeKCLNode(); 
-    }
-    // --- END KCL Demo ---
 
-    // --- Op-Amp Amplifier Demo (Chapter 5) ---
-    const opampVinInput = document.getElementById('opampVin');
-    const opampR1Input = document.getElementById('opampR1');
-    const opampRfInput = document.getElementById('opampRf');
-    const opampConfigSelect = document.getElementById('opampConfig');
-    const opampSimulateBtn = document.getElementById('opampSimulateBtn');
-    const opampVoutDisplay = document.getElementById('opampVout');
-    const opampGainDisplay = document.getElementById('opampGain');
-    const opampFormulaDisplay = document.getElementById('opampFormulaDisplay');
-    const opampCanvas = document.getElementById('opampCanvas');
+        // --- KCL Visualizer Demo (Chapter 2) ---
+        const kclIs1Input = document.getElementById('kclIs1');
+        const kclIs2Input = document.getElementById('kclIs2');
+        const kclR1Input = document.getElementById('kclR1');
+        const kclSimulateBtn = document.getElementById('kclSimulateBtn');
 
-    if (opampCanvas) {
-        const opampCtx = opampCanvas.getContext('2d');
-        function drawOpAmpDiagram(config, r1Val, rfVal, vinVal, voutVal) {
-            if (!opampCtx) return;
-            opampCtx.clearRect(0, 0, opampCanvas.width, opampCanvas.height);
-            const W = opampCanvas.width; const H = opampCanvas.height;
-            const opampBodyX = W/2 - 25; const opampBodyY = H/2 - 35;
-            const opampBodyW = 50; const opampBodyH = 70;
-            const outputX = opampBodyX + opampBodyW; const outputY = H/2;
+        const kclVnodeDisplay = document.getElementById('kclVnode');
+        const kclIr1Display = document.getElementById('kclIr1');
+        const kclSumInDisplay = document.getElementById('kclSumIn');
+        const kclSumOutDisplay = document.getElementById('kclSumOut');
+        const kclBalanceDisplay = document.getElementById('kclBalance');
+        const kclCanvas = document.getElementById('kclCanvas');
 
-            opampCtx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
-            opampCtx.fillStyle = opampCtx.strokeStyle;
-            opampCtx.lineWidth = 1.5;
-            opampCtx.font = "10px Segoe UI";
+        if (kclCanvas) { // Ensure canvas element exists
+            const kclCtx = kclCanvas.getContext('2d');
 
-            opampCtx.beginPath();
-            opampCtx.moveTo(opampBodyX, opampBodyY); 
-            opampCtx.lineTo(outputX, outputY);      
-            opampCtx.lineTo(opampBodyX, opampBodyY + opampBodyH); 
-            opampCtx.closePath();
-            opampCtx.stroke();
-            
-            const invertingY = outputY + 15; const nonInvertingY = outputY - 15;
-            opampCtx.fillText("-", opampBodyX + 5, invertingY + 4);
-            opampCtx.fillText("+", opampBodyX + 5, nonInvertingY + 4);
+            function drawKCLDiagram(is1, is2, ir1, vNode) {
+                if (!kclCtx) return;
+                kclCtx.clearRect(0, 0, kclCanvas.width, kclCanvas.height);
+                kclCtx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
+                kclCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
+                kclCtx.lineWidth = 1.5;
+                kclCtx.font = "10px Segoe UI";
+                
+                const nodeX = kclCanvas.width / 2;
+                const nodeY = kclCanvas.height / 2 - 10; // Central node slightly up
 
-            opampCtx.beginPath(); // Output line
-            opampCtx.moveTo(outputX, outputY); opampCtx.lineTo(outputX + 30, outputY);
-            opampCtx.stroke();
-            opampCtx.fillText("Vout", outputX + 35, outputY + 3);
-            if(isFinite(voutVal)) opampCtx.fillText(voutVal.toFixed(2)+"V", outputX + 35, outputY + 15);
-            
-            const inputLineX = opampBodyX - 40;
+                // Node
+                kclCtx.beginPath();
+                kclCtx.arc(nodeX, nodeY, 5, 0, 2 * Math.PI);
+                kclCtx.fill();
+                kclCtx.fillText(`Vnode=${vNode.toFixed(2)}V`, nodeX + 8, nodeY - 5);
 
-            if (config === "inverting") {
-                opampCtx.fillText("Vin", inputLineX - 25, invertingY + 3);
-                if(isFinite(vinVal)) opampCtx.fillText(vinVal.toFixed(2)+"V", inputLineX-25, invertingY+15);
+                // Current Source 1 (Is1) - from left
+                const is1StartX = nodeX - 80;
+                const is1StartY = nodeY;
+                kclCtx.beginPath();
+                kclCtx.arc(is1StartX, is1StartY, 15, 0, 2 * Math.PI); // Circle for current source
+                kclCtx.moveTo(is1StartX + 7, is1StartY - 7); kclCtx.lineTo(is1StartX + 7, is1StartY + 7); // Arrow inside
+                kclCtx.moveTo(is1StartX + 7, is1StartY); kclCtx.lineTo(is1StartX + 13, is1StartY - 5); 
+                kclCtx.moveTo(is1StartX + 7, is1StartY); kclCtx.lineTo(is1StartX + 13, is1StartY + 5);
+                kclCtx.moveTo(is1StartX + 15, is1StartY); kclCtx.lineTo(nodeX - 5, nodeY); // Wire to node
+                kclCtx.stroke();
+                kclCtx.fillText(`Is1=${is1.toFixed(2)}A ->`, is1StartX - 35, is1StartY + 4);
 
-                opampCtx.beginPath(); // Vin to R1 to Inverting input
-                opampCtx.moveTo(inputLineX, invertingY); opampCtx.lineTo(opampBodyX - 25, invertingY);
-                opampCtx.rect(opampBodyX - 25, invertingY - 5, 20, 10); // R1
-                opampCtx.moveTo(opampBodyX - 5, invertingY); opampCtx.lineTo(opampBodyX, invertingY);
-                opampCtx.fillText("R1", opampBodyX - 20, invertingY - 10);
-                if(isFinite(r1Val)) opampCtx.fillText(r1Val+"kΩ", opampBodyX - 25, invertingY + 20);
+                // Current Source 2 (Is2) - from top
+                const is2StartX = nodeX;
+                const is2StartY = nodeY - 60;
+                kclCtx.beginPath();
+                kclCtx.arc(is2StartX, is2StartY, 15, 0, 2 * Math.PI);
+                kclCtx.moveTo(is2StartX - 7, is2StartY + 7); kclCtx.lineTo(is2StartX + 7, is2StartY + 7); // Arrow inside (vertical)
+                kclCtx.moveTo(is2StartX, is2StartY + 7); kclCtx.lineTo(is2StartX - 5, is2StartY + 13);
+                kclCtx.moveTo(is2StartX, is2StartY + 7); kclCtx.lineTo(is2StartX + 5, is2StartY + 13);
+                kclCtx.moveTo(is2StartX, is2StartY + 15); kclCtx.lineTo(nodeX, nodeY - 5); // Wire to node
+                kclCtx.stroke();
+                kclCtx.fillText(`Is2=${is2.toFixed(2)}A`, is2StartX + 20, is2StartY + 4);
+                kclCtx.fillText(`↓`, is2StartX -3, is2StartY +30);
 
 
-                // Rf (Feedback)
-                opampCtx.moveTo(opampBodyX, invertingY); opampCtx.lineTo(opampBodyX - 15, invertingY); // Small line from inv input
-                opampCtx.lineTo(opampBodyX - 15, nonInvertingY - 20); // Up
-                opampCtx.lineTo(outputX + 15, nonInvertingY - 20); // Across top
-                opampCtx.rect(outputX -5 , nonInvertingY - 25, 20, 10); // Rf
-                opampCtx.fillText("Rf", outputX , nonInvertingY - 30);
-                if(isFinite(rfVal)) opampCtx.fillText(rfVal+"kΩ", outputX - 5, nonInvertingY - 5);
-                opampCtx.lineTo(outputX + 15, outputY); // Down to output line
-                opampCtx.stroke();
+                // Resistor R1 - down to ground
+                const r1TopY = nodeY + 5;
+                const r1BottomY = kclCanvas.height - 20;
+                const r1MidY = (r1TopY + r1BottomY) / 2;
+                kclCtx.beginPath();
+                kclCtx.moveTo(nodeX, r1TopY); kclCtx.lineTo(nodeX, r1MidY - 10);
+                kclCtx.rect(nodeX - 10, r1MidY - 10, 20, 20); // Resistor box
+                kclCtx.moveTo(nodeX, r1MidY + 10); kclCtx.lineTo(nodeX, r1BottomY);
+                // Ground symbol
+                kclCtx.moveTo(nodeX - 10, r1BottomY); kclCtx.lineTo(nodeX + 10, r1BottomY);
+                kclCtx.moveTo(nodeX - 6, r1BottomY + 4); kclCtx.lineTo(nodeX + 6, r1BottomY + 4);
+                kclCtx.moveTo(nodeX - 2, r1BottomY + 8); kclCtx.lineTo(nodeX + 2, r1BottomY + 8);
+                kclCtx.stroke();
+                kclCtx.fillText(`R1=${kclR1Input.value}Ω`, nodeX + 15, r1MidY + 5);
+                kclCtx.fillText(`-> Ir1=${ir1.toFixed(2)}A`, nodeX + 15, r1TopY + 15);
+            }
 
-                // Ground non-inverting input
+
+            function analyzeKCLNode() {
+                if (!kclIs1Input || !kclIs2Input || !kclR1Input || !kclVnodeDisplay || !kclIr1Display ||
+                    !kclSumInDisplay || !kclSumOutDisplay || !kclBalanceDisplay) {
+                    console.error("KCL demo elements not found.");
+                    return;
+                }
+
+                const Is1 = parseFloat(kclIs1Input.value);
+                const Is2 = parseFloat(kclIs2Input.value);
+                const R1 = parseFloat(kclR1Input.value);
+
+                if (isNaN(Is1) || isNaN(Is2) || isNaN(R1) || R1 <= 0) {
+                    kclVnodeDisplay.textContent = "Invalid";
+                    kclIr1Display.textContent = "Invalid Input";
+                    kclSumInDisplay.textContent = "N/A";
+                    kclSumOutDisplay.textContent = "N/A";
+                    kclBalanceDisplay.textContent = "Invalid Input";
+                    if (kclCtx) kclCtx.clearRect(0, 0, kclCanvas.width, kclCanvas.height);
+                    return;
+                }
+
+                // KCL at the node: Is1 + Is2 = Ir1
+                // Ir1 = Vnode / R1
+                // So, Is1 + Is2 = Vnode / R1
+                // Vnode = (Is1 + Is2) * R1
+                const Vnode = (Is1 + Is2) * R1;
+                const Ir1 = Vnode / R1; // Which should be Is1 + Is2
+
+                const sumIn = Is1 + Is2;
+                const sumOut = Ir1;
+
+                kclVnodeDisplay.textContent = Vnode.toFixed(3);
+                kclIr1Display.textContent = Ir1.toFixed(3);
+                kclSumInDisplay.textContent = sumIn.toFixed(3);
+                kclSumOutDisplay.textContent = sumOut.toFixed(3);
+
+                if (Math.abs(sumIn - sumOut) < 1e-6) { // Check for balance within tolerance
+                    kclBalanceDisplay.textContent = "Balanced ✔️";
+                    kclBalanceDisplay.style.color = "lightgreen";
+                } else {
+                    kclBalanceDisplay.textContent = "Not Balanced ❌";
+                    kclBalanceDisplay.style.color = "var(--accent-color)";
+                }
+                
+                drawKCLDiagram(Is1, Is2, Ir1, Vnode);
+            }
+
+            if (kclSimulateBtn) kclSimulateBtn.addEventListener('click', analyzeKCLNode);
+            const kclInputs = [kclIs1Input, kclIs2Input, kclR1Input];
+            kclInputs.forEach(input => {
+                if(input) input.addEventListener('input', analyzeKCLNode);
+            });
+
+            analyzeKCLNode(); // Initial analysis
+        } else {
+            console.error("KCL Canvas element not found!");
+        }
+
+        // --- Op-Amp Amplifier Demo (Chapter 5) ---
+        const opampVinInput = document.getElementById('opampVin');
+        const opampR1Input = document.getElementById('opampR1');
+        const opampRfInput = document.getElementById('opampRf');
+        const opampConfigSelect = document.getElementById('opampConfig');
+        const opampSimulateBtn = document.getElementById('opampSimulateBtn');
+
+        const opampVoutDisplay = document.getElementById('opampVout');
+        const opampGainDisplay = document.getElementById('opampGain');
+        const opampFormulaDisplay = document.getElementById('opampFormulaDisplay');
+        const opampCanvas = document.getElementById('opampCanvas');
+
+        if (opampCanvas) { // Ensure canvas element exists
+            const opampCtx = opampCanvas.getContext('2d');
+
+            function drawOpAmpDiagram(config, r1Val, rfVal, vinVal, voutVal) {
+                if (!opampCtx) return;
+                opampCtx.clearRect(0, 0, opampCanvas.width, opampCanvas.height);
+                opampCtx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
+                opampCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
+                opampCtx.lineWidth = 1.5;
+                opampCtx.font = "10px Segoe UI";
+
+                // Op-amp triangle
                 opampCtx.beginPath();
-                opampCtx.moveTo(opampBodyX, nonInvertingY); opampCtx.lineTo(opampBodyX - 15, nonInvertingY);
-                opampCtx.lineTo(opampBodyX - 15, nonInvertingY + 10); // Ground symbol lines
-                opampCtx.moveTo(opampBodyX - 20, nonInvertingY + 10); opampCtx.lineTo(opampBodyX - 10, nonInvertingY + 10);
-                opampCtx.moveTo(opampBodyX - 18, nonInvertingY + 14); opampCtx.lineTo(opampBodyX - 12, nonInvertingY + 14);
-                opampCtx.moveTo(opampBodyX - 16, nonInvertingY + 18); opampCtx.lineTo(opampBodyX - 14, nonInvertingY + 18);
+                opampCtx.moveTo(100, 40); // Top point
+                opampCtx.lineTo(100, 110); // Bottom point
+                opampCtx.lineTo(180, 75); // Output point
+                opampCtx.closePath();
                 opampCtx.stroke();
 
-            } else { // Non-inverting
-                opampCtx.fillText("Vin", inputLineX - 25, nonInvertingY + 3);
-                if(isFinite(vinVal)) opampCtx.fillText(vinVal.toFixed(2)+"V", inputLineX -25, nonInvertingY+15);
-                opampCtx.beginPath(); // Vin to Non-inverting input
-                opampCtx.moveTo(inputLineX, nonInvertingY); opampCtx.lineTo(opampBodyX, nonInvertingY);
-
-                // R1 from inverting input to ground
-                opampCtx.moveTo(opampBodyX, invertingY); opampCtx.lineTo(opampBodyX - 15, invertingY); // Line from inv input
-                opampCtx.rect(opampBodyX - 15, invertingY +5, 20, 10); // R1 (vertical placement for clarity)
-                opampCtx.fillText("R1", opampBodyX - 10, invertingY + 28 );
-                if(isFinite(r1Val)) opampCtx.fillText(r1Val+"kΩ", opampBodyX - 18, invertingY - 8);
-
-
-                opampCtx.moveTo(opampBodyX - 15 + 10, invertingY + 15); opampCtx.lineTo(opampBodyX - 15 + 10, invertingY + 25); // Line to ground symbol
-                opampCtx.moveTo(opampBodyX - 20 +10, invertingY + 25); opampCtx.lineTo(opampBodyX - 10 +10, invertingY + 25);
-                opampCtx.moveTo(opampBodyX - 18 +10, invertingY + 29); opampCtx.lineTo(opampBodyX - 12 +10, invertingY + 29);
-                opampCtx.moveTo(opampBodyX - 16 +10, invertingY + 33); opampCtx.lineTo(opampBodyX - 14 +10, invertingY + 33);
-
-                 // Rf from output to inverting input
-                opampCtx.moveTo(opampBodyX, invertingY); // Node for Rf and R1
-                opampCtx.lineTo(opampBodyX + 10, invertingY); // Extend out slightly for feedback connection point
-                opampCtx.lineTo(opampBodyX + 10, outputY - 20); // Up towards top
-                opampCtx.lineTo(outputX - 10, outputY - 20); // Across top
-                opampCtx.rect(outputX - 30, outputY - 25, 20, 10); // Rf
-                opampCtx.fillText("Rf", outputX - 25, outputY - 30);
-                if(isFinite(rfVal)) opampCtx.fillText(rfVal+"kΩ", outputX - 30, outputY - 5);
-                opampCtx.lineTo(outputX - 10, outputY); // Down to output line
+                // Inputs and output lines
+                opampCtx.beginPath();
+                opampCtx.moveTo(50, 55); opampCtx.lineTo(100, 55); // Non-inverting input line
+                opampCtx.moveTo(50, 95); opampCtx.lineTo(100, 95); // Inverting input line
+                opampCtx.moveTo(180, 75); opampCtx.lineTo(220, 75); // Output line
                 opampCtx.stroke();
+
+                // Labels: -, + inside triangle
+                opampCtx.fillText("-", 105, 98);
+                opampCtx.fillText("+", 105, 60);
+                opampCtx.fillText("Vout", 225, 78);
+                if (isFinite(voutVal)) opampCtx.fillText(voutVal.toFixed(2)+"V", 225, 90);
+
+
+                // Components based on config
+                if (config === "inverting") {
+                    opampCtx.fillText("Vin", 10, 98);
+                    if (isFinite(vinVal)) opampCtx.fillText(vinVal.toFixed(2)+"V", 10, 110);
+
+                    // R1
+                    opampCtx.strokeRect(40, 90, 30, 10); // x,y,w,h from Vin to inverting input
+                    opampCtx.fillText("R1", 48, 85);
+                    if (isFinite(r1Val)) opampCtx.fillText(r1Val+"kΩ", 45, 113);
+
+
+                    // Rf (feedback)
+                    opampCtx.beginPath();
+                    opampCtx.moveTo(100, 95); opampCtx.lineTo(140, 95); opampCtx.lineTo(140, 45); opampCtx.lineTo(190, 45); opampCtx.lineTo(190,75); opampCtx.lineTo(180,75);
+                    opampCtx.stroke();
+                    opampCtx.strokeRect(130, 30, 30, 10); // Rf on feedback path
+                    opampCtx.fillText("Rf", 138, 25);
+                    if (isFinite(rfVal)) opampCtx.fillText(rfVal+"kΩ", 135, 53);
+
+
+                    // Ground non-inverting input
+                    opampCtx.moveTo(100, 55); opampCtx.lineTo(120, 55); 
+                    opampCtx.moveTo(120,55); opampCtx.lineTo(120,65); // Ground symbol
+                    opampCtx.moveTo(115,65); opampCtx.lineTo(125,65);
+                    opampCtx.moveTo(117,70); opampCtx.lineTo(123,70);
+                    opampCtx.moveTo(119,75); opampCtx.lineTo(121,75);
+                    opampCtx.stroke();
+
+                } else if (config === "non-inverting") {
+                    opampCtx.fillText("Vin", 10, 58);
+                    if (isFinite(vinVal)) opampCtx.fillText(vinVal.toFixed(2)+"V", 10, 70);
+
+                    // R1 from inverting input to ground
+                    opampCtx.beginPath();
+                    opampCtx.moveTo(100, 95); opampCtx.lineTo(120, 95); 
+                    opampCtx.strokeRect(120, 90, 30, 10); 
+                    opampCtx.moveTo(150,95); opampCtx.lineTo(160,95);opampCtx.lineTo(160,105); // to ground
+                    opampCtx.moveTo(155,105); opampCtx.lineTo(165,105);
+                    opampCtx.moveTo(157,110); opampCtx.lineTo(163,110);
+                    opampCtx.moveTo(159,115); opampCtx.lineTo(161,115);
+                    opampCtx.stroke();
+                    opampCtx.fillText("R1", 128, 85);
+                    if (isFinite(r1Val)) opampCtx.fillText(r1Val+"kΩ", 125, 113);
+
+
+                    // Rf from output to inverting input
+                    opampCtx.beginPath();
+                    opampCtx.moveTo(100, 95); opampCtx.lineTo(140, 95); opampCtx.lineTo(140, 45); opampCtx.lineTo(190, 45); opampCtx.lineTo(190,75); opampCtx.lineTo(180,75);
+                    opampCtx.stroke();
+                    opampCtx.strokeRect(130, 30, 30, 10); 
+                    opampCtx.fillText("Rf", 138, 25);
+                    if (isFinite(rfVal)) opampCtx.fillText(rfVal+"kΩ", 135, 53);
+
+                }
             }
+
+            function calculateOpAmp() {
+                if (!opampVinInput || !opampR1Input || !opampRfInput || !opampConfigSelect || !opampVoutDisplay || !opampGainDisplay || !opampFormulaDisplay) return;
+
+                const Vin = parseFloat(opampVinInput.value);
+                const R1 = parseFloat(opampR1Input.value); // Assuming kOhms from label
+                const Rf = parseFloat(opampRfInput.value); // Assuming kOhms
+                const config = opampConfigSelect.value;
+
+                if (isNaN(Vin) || isNaN(R1) || isNaN(Rf) || R1 <= 0 || Rf < 0) {
+                    opampVoutDisplay.textContent = "Invalid";
+                    opampGainDisplay.textContent = "Invalid";
+                    opampFormulaDisplay.textContent = "Formula: Invalid Input";
+                    drawOpAmpDiagram(config, NaN, NaN, NaN, NaN);
+                    return;
+                }
+
+                let Vout, Gain, formula;
+
+                if (config === "inverting") {
+                    Gain = -Rf / R1;
+                    Vout = Gain * Vin;
+                    formula = "Vout = -(Rf / R1) * Vin";
+                } else { // non-inverting
+                    Gain = 1 + (Rf / R1);
+                    Vout = Gain * Vin;
+                    formula = "Vout = (1 + Rf / R1) * Vin";
+                }
+
+                opampVoutDisplay.textContent = Vout.toFixed(3);
+                opampGainDisplay.textContent = Gain.toFixed(3);
+                opampFormulaDisplay.textContent = `Formula: ${formula}`;
+                drawOpAmpDiagram(config, R1, Rf, Vin, Vout);
+            }
+
+            if (opampSimulateBtn) opampSimulateBtn.addEventListener('click', calculateOpAmp);
+            if (opampVinInput) opampVinInput.addEventListener('input', calculateOpAmp);
+            if (opampR1Input) opampR1Input.addEventListener('input', calculateOpAmp);
+            if (opampRfInput) opampRfInput.addEventListener('input', calculateOpAmp);
+            if (opampConfigSelect) opampConfigSelect.addEventListener('change', calculateOpAmp);
+
+            calculateOpAmp(); // Initial calculation
+        } else {
+            console.error("Op-amp canvas element not found!");
         }
-        function calculateOpAmp() {
-            if (!opampVinInput || !opampR1Input || !opampRfInput || !opampConfigSelect || !opampVoutDisplay || !opampGainDisplay || !opampFormulaDisplay) return;
-            const Vin = parseFloat(opampVinInput.value);
-            const R1 = parseFloat(opampR1Input.value); 
-            const Rf = parseFloat(opampRfInput.value); 
-            const config = opampConfigSelect.value;
 
-            if (isNaN(Vin) || isNaN(R1) || isNaN(Rf) || R1 <= 0 || Rf < 0) {
-                opampVoutDisplay.textContent = "Invalid"; opampGainDisplay.textContent = "Input";
-                opampFormulaDisplay.textContent = "Formula: Invalid Input";
-                drawOpAmpDiagram(config, NaN, NaN, NaN, NaN); return;
-            }
-            let Vout, Gain, formula;
-            if (config === "inverting") {
-                Gain = -Rf / R1; Vout = Gain * Vin; formula = "Vout = -(Rf / R1) * Vin";
-            } else { 
-                Gain = 1 + (Rf / R1); Vout = Gain * Vin; formula = "Vout = (1 + Rf / R1) * Vin";
-            }
-            opampVoutDisplay.textContent = Vout.toFixed(3);
-            opampGainDisplay.textContent = Gain.toFixed(3);
-            opampFormulaDisplay.textContent = `Formula: ${formula}`;
-            drawOpAmpDiagram(config, R1, Rf, Vin, Vout);
-        }
-        if (opampSimulateBtn) opampSimulateBtn.addEventListener('click', calculateOpAmp);
-        [opampVinInput, opampR1Input, opampRfInput, opampConfigSelect].forEach(el => {
-            if(el) el.addEventListener('input', calculateOpAmp); // 'input' for number/select
-        });
-        if (typeof calculateOpAmp === 'function') calculateOpAmp();
-    }
-    // --- END Op-Amp Demo ---
+        // --- RLC Circuit Step Response Demo Logic (Chapter 16) ---
+        const rlcRInput = document.getElementById('rlcR');
+        const rlcLInput = document.getElementById('rlcL');
+        const rlcCInput = document.getElementById('rlcC');
+        const rlcSimulateBtn = document.getElementById('rlcSimulateBtn');
 
+        const alphaValDisplay = document.getElementById('alphaVal');
+        const omega0ValDisplay = document.getElementById('omega0Val');
+        const dampingTypeDisplay = document.getElementById('dampingType');
+        const rootsValDisplay = document.getElementById('rootsVal');
+        const solutionFormVcDisplay = document.getElementById('solutionFormVc');
+        const rlcCanvas = document.getElementById('rlcResponseCanvas');
 
-    // --- RLC Circuit Step Response Demo Logic (Chapter 16) ---
-    // ... (RLC JS code from previous message goes here, make sure it's complete)
-    // The RLC code was provided in my previous (very long) response. 
-    // I'll paste its *complete* version again for safety.
-    const rlcRInput_ch16 = document.getElementById('rlcR'); // Suffix to avoid var name conflict
-    const rlcLInput_ch16 = document.getElementById('rlcL');
-    const rlcCInput_ch16 = document.getElementById('rlcC');
-    const rlcSimulateBtn_ch16 = document.getElementById('rlcSimulateBtn');
+        if (rlcCanvas) { // Check if element exists before getting context
+            const rlcCtx = rlcCanvas.getContext('2d');
 
-    const alphaValDisplay_ch16 = document.getElementById('alphaVal');
-    const omega0ValDisplay_ch16 = document.getElementById('omega0Val');
-    const dampingTypeDisplay_ch16 = document.getElementById('dampingType');
-    const rootsValDisplay_ch16 = document.getElementById('rootsVal');
-    const solutionFormVcDisplay_ch16 = document.getElementById('solutionFormVc');
-    const rlcCanvas_ch16 = document.getElementById('rlcResponseCanvas');
+            function analyzeRLC() {
+                if (!rlcRInput || !rlcLInput || !rlcCInput || !alphaValDisplay || !omega0ValDisplay || !dampingTypeDisplay || !rootsValDisplay || !solutionFormVcDisplay) {
+                    console.error("RLC demo elements not found or missing.");
+                    return;
+                }
+                const R = parseFloat(rlcRInput.value);
+                const L = parseFloat(rlcLInput.value);
+                const C = parseFloat(rlcCInput.value);
+                const Vs = 1; // Step input of 1V for v_C(t) response
 
-    if (rlcCanvas_ch16) { 
-        const rlcCtx_ch16 = rlcCanvas_ch16.getContext('2d');
+                if (isNaN(R) || isNaN(L) || isNaN(C) || L <= 0 || C <= 0 || R < 0) {
+                    alphaValDisplay.textContent = "Invalid";
+                    omega0ValDisplay.textContent = "Invalid";
+                    dampingTypeDisplay.textContent = "Invalid Input";
+                    rootsValDisplay.textContent = "N/A";
+                    solutionFormVcDisplay.textContent = "v_C(t) = Invalid Input";
+                    clearRLCCanvas();
+                    return;
+                }
 
-        function analyzeRLC_ch16() {
-            if (!rlcRInput_ch16 || !rlcLInput_ch16 || !rlcCInput_ch16 || !alphaValDisplay_ch16 || !omega0ValDisplay_ch16 || !dampingTypeDisplay_ch16 || !rootsValDisplay_ch16 || !solutionFormVcDisplay_ch16) {
-                console.error("RLC demo elements not found or missing (Ch16).");
-                return;
-            }
-            const R_ch16 = parseFloat(rlcRInput_ch16.value);
-            const L_ch16 = parseFloat(rlcLInput_ch16.value);
-            const C_ch16 = parseFloat(rlcCInput_ch16.value);
-            const Vs_ch16 = 1; 
+                const alpha = R / (2 * L);
+                const omega0 = 1 / Math.sqrt(L * C);
 
-            if (isNaN(R_ch16) || isNaN(L_ch16) || isNaN(C_ch16) || L_ch16 <= 0 || C_ch16 <= 0 || R_ch16 < 0) {
-                alphaValDisplay_ch16.textContent = "Invalid"; omega0ValDisplay_ch16.textContent = "Invalid";
-                dampingTypeDisplay_ch16.textContent = "Invalid Input"; rootsValDisplay_ch16.textContent = "N/A";
-                solutionFormVcDisplay_ch16.innerHTML = "v<sub>C</sub>(t) = Invalid Input"; // Use innerHTML for sub
-                clearRLCCanvas_ch16(); return;
-            }
+                alphaValDisplay.textContent = alpha.toFixed(3);
+                omega0ValDisplay.textContent = omega0.toFixed(3);
 
-            const alpha_ch16 = R_ch16 / (2 * L_ch16);
-            const omega0_ch16 = 1 / Math.sqrt(L_ch16 * C_ch16);
+                let dampingType = "";
+                let rootsDesc = "";
+                let solutionForm = `v<sub>C</sub>(t) = ${Vs}`; // Start with final value for step response to Vs
+                let plotTimeMaxFactor = 5; // General factor for plot duration relative to characteristic time
+                let responseFunction;
 
-            alphaValDisplay_ch16.textContent = alpha_ch16.toFixed(3);
-            omega0ValDisplay_ch16.textContent = omega0_ch16.toFixed(3);
+                const discriminant = alpha * alpha - omega0 * omega0;
 
-            let dampingType_str = ""; let rootsDesc_str = "";
-            let solutionForm_str = `v<sub>C</sub>(t) = ${Vs_ch16}`; 
-            let plotTimeMaxFactor_val = 5; 
-            let responseFunction_calc;
+                if (discriminant > 0) { // Overdamped
+                    dampingType = "Overdamped";
+                    const s1 = -alpha + Math.sqrt(discriminant);
+                    const s2 = -alpha - Math.sqrt(discriminant);
+                    rootsDesc = `s1 = ${s1.toFixed(3)}, s2 = ${s2.toFixed(3)} (real, distinct)`;
+                    solutionForm += ` + A₁e<sup>${s1.toFixed(2)}t</sup> + A₂e<sup>${s2.toFixed(2)}t</sup>`;
+                    const A1 = Vs * s2 / (s1 - s2); // For vC(0)=0, vC'(0)=0
+                    const A2 = -Vs * s1 / (s1 - s2);
+                    responseFunction = t => Vs + A1 * Math.exp(s1 * t) + A2 * Math.exp(s2 * t);
+                    plotTimeMaxFactor = (s2 !== 0) ? 1 / Math.abs(s2) : ( (s1 !==0) ? 1/Math.abs(s1) : 1); // Based on slower pole
+                } else if (Math.abs(discriminant) < 1e-9 * (omega0*omega0)) { // Critically Damped (check with tolerance relative to omega0^2)
+                    dampingType = "Critically Damped";
+                    const s_crit = -alpha;
+                    rootsDesc = `s1 = s2 = ${s_crit.toFixed(3)} (real, repeated)`;
+                    solutionForm += ` + (A₁ + A₂t)e<sup>${s_crit.toFixed(2)}t</sup>`;
+                    const A1_crit = -Vs; // For vC(0)=0, vC'(0)=0
+                    const A2_crit = -Vs * alpha;
+                    responseFunction = t => Vs + (A1_crit + A2_crit * t) * Math.exp(s_crit * t);
+                    plotTimeMaxFactor = (alpha !==0) ? 1 / alpha : 1;
+                } else { // Underdamped
+                    dampingType = "Underdamped";
+                    const omega_d = Math.sqrt(-discriminant);
+                    rootsDesc = `s1,2 = ${(-alpha).toFixed(3)} ± j${omega_d.toFixed(3)} (complex)`;
+                    solutionForm += ` + e<sup>${(-alpha).toFixed(2)}t</sup>(A₁cos(${omega_d.toFixed(2)}t) + A₂sin(${omega_d.toFixed(2)}t))`;
+                    const A1_under = -Vs; // For vC(0)=0, vC'(0)=0
+                    const A2_under = (omega_d !== 0) ? (-Vs * alpha / omega_d) : 0;
+                    responseFunction = t => Vs + Math.exp(-alpha * t) * (A1_under * Math.cos(omega_d * t) + A2_under * Math.sin(omega_d * t));
+                    plotTimeMaxFactor = (omega_d !== 0) ? (2 * Math.PI / omega_d) : ((alpha !==0) ? 1/alpha : 1); // One period or characteristic time
+                }
 
-            const discriminant_val = alpha_ch16 * alpha_ch16 - omega0_ch16 * omega0_ch16;
-
-            if (discriminant_val > 1e-9 * (omega0_ch16*omega0_ch16)) { // Overdamped (added tolerance)
-                dampingType_str = "Overdamped";
-                const s1_calc = -alpha_ch16 + Math.sqrt(discriminant_val);
-                const s2_calc = -alpha_ch16 - Math.sqrt(discriminant_val);
-                rootsDesc_str = `s1=${s1_calc.toFixed(3)}, s2=${s2_calc.toFixed(3)}`;
-                solutionForm_str += ` + A<sub>1</sub>e<sup>${s1_calc.toFixed(2)}t</sup> + A<sub>2</sub>e<sup>${s2_calc.toFixed(2)}t</sup>`;
-                const A1_calc = Vs_ch16 * s2_calc / (s1_calc - s2_calc); 
-                const A2_calc = -Vs_ch16 * s1_calc / (s1_calc - s2_calc);
-                responseFunction_calc = t => Vs_ch16 + A1_calc * Math.exp(s1_calc * t) + A2_calc * Math.exp(s2_calc * t);
-                plotTimeMaxFactor_val = (s2_calc !== 0) ? 1 / Math.abs(s2_calc) : ( (s1_calc !==0) ? 1/Math.abs(s1_calc) : 1);
-            } else if (Math.abs(discriminant_val) < 1e-9 * (omega0_ch16*omega0_ch16)) { 
-                dampingType_str = "Critically Damped";
-                const s_crit_calc = -alpha_ch16;
-                rootsDesc_str = `s1=s2=${s_crit_calc.toFixed(3)}`;
-                solutionForm_str += ` + (A<sub>1</sub> + A<sub>2</sub>t)e<sup>${s_crit_calc.toFixed(2)}t</sup>`;
-                const A1_crit_calc = -Vs_ch16; 
-                const A2_crit_calc = -Vs_ch16 * alpha_ch16;
-                responseFunction_calc = t => Vs_ch16 + (A1_crit_calc + A2_crit_calc * t) * Math.exp(s_crit_calc * t);
-                plotTimeMaxFactor_val = (alpha_ch16 !==0) ? 1 / alpha_ch16 : 1;
-            } else { 
-                dampingType_str = "Underdamped";
-                const omega_d_calc = Math.sqrt(-discriminant_val);
-                rootsDesc_str = `s1,2=${(-alpha_ch16).toFixed(3)} ± j${omega_d_calc.toFixed(3)}`;
-                solutionForm_str += ` + e<sup>${(-alpha_ch16).toFixed(2)}t</sup>(A<sub>1</sub>cos(${omega_d_calc.toFixed(2)}t) + A<sub>2</sub>sin(${omega_d_calc.toFixed(2)}t))`;
-                const A1_under_calc = -Vs_ch16; 
-                const A2_under_calc = (omega_d_calc !== 0) ? (-Vs_ch16 * alpha_ch16 / omega_d_calc) : 0;
-                responseFunction_calc = t => Vs_ch16 + Math.exp(-alpha_ch16 * t) * (A1_under_calc * Math.cos(omega_d_calc * t) + A2_under_calc * Math.sin(omega_d_calc * t));
-                plotTimeMaxFactor_val = (omega_d_calc !== 0) ? (2 * Math.PI / omega_d_calc) : ((alpha_ch16 !==0) ? 1/alpha_ch16 : 1);
+                dampingTypeDisplay.textContent = dampingType;
+                rootsValDisplay.textContent = rootsDesc;
+                solutionFormVcDisplay.innerHTML = solutionForm.replace(/A₁/g, 'A<sub>1</sub>').replace(/A₂/g, 'A<sub>2</sub>');
+                
+                plotRLCResponse(responseFunction, plotTimeMaxFactor * (dampingType === "Underdamped" ? 3 : 5)); // Plot a few cycles/time constants
             }
 
-            dampingTypeDisplay_ch16.textContent = dampingType_str;
-            rootsValDisplay_ch16.textContent = rootsDesc_str;
-            solutionFormVcDisplay_ch16.innerHTML = solutionForm_str;
+            function plotRLCResponse(responseFunc, tMax) {
+                if (!rlcCtx || !responseFunc) return;
+                rlcCtx.clearRect(0, 0, rlcCanvas.width, rlcCanvas.height);
+                rlcCtx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim();
+                rlcCtx.lineWidth = 1.5;
+
+                const padding = 25;
+                const plotWidth = rlcCanvas.width - 2 * padding;
+                const plotHeight = rlcCanvas.height - 2 * padding;
+                const Vs_plot = 1; // Normalized to Vs=1 for plotting reference for y-axis scaling
+
+                // Determine Y scale - allow for some overshoot in underdamped case
+                const yMaxVisual = Vs_plot * 1.8; 
+                const yMinVisual = Vs_plot * -0.2; // Allow a little undershoot to be visible
+                const plotYRange = yMaxVisual - yMinVisual;
+                const scaleY = plotHeight / plotYRange;
+
+                rlcCtx.beginPath();
+                const numPoints = 250;
+                for (let i = 0; i <= numPoints; i++) {
+                    const t = (i / numPoints) * tMax;
+                    let v_c_val = responseFunc(t);
+                    
+                    const xPlot = padding + (t / tMax) * plotWidth;
+                    // Map v_c_val from [yMinVisual, yMaxVisual] to canvas y-coordinates
+                    const yPlot = (rlcCanvas.height - padding) - ((v_c_val - yMinVisual) * scaleY);
+
+
+                    if (i === 0) rlcCtx.moveTo(xPlot, yPlot);
+                    else rlcCtx.lineTo(xPlot, yPlot);
+                }
+                rlcCtx.stroke();
+
+                // Draw Axes
+                rlcCtx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--highlight-color').trim();
+                rlcCtx.lineWidth = 1;
+                rlcCtx.beginPath();
+                // X-axis (represents y=0 of the value, or can be bottom of plot)
+                const yZeroLine = (rlcCanvas.height - padding) - ((0 - yMinVisual) * scaleY);
+                rlcCtx.moveTo(padding, yZeroLine); 
+                rlcCtx.lineTo(rlcCanvas.width - padding, yZeroLine);
+                // Y-axis
+                rlcCtx.moveTo(padding, padding); 
+                rlcCtx.lineTo(padding, rlcCanvas.height - padding);
+                rlcCtx.stroke();
+                
+                rlcCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
+                rlcCtx.font = "10px Segoe UI";
+                rlcCtx.fillText("t", rlcCanvas.width - padding, yZeroLine +10);
+                rlcCtx.fillText("vC(t)", padding -20 , padding -5);
+                rlcCtx.fillText("0", padding - 10, yZeroLine + 3);
+                // Label Vs line if within plot
+                const yVsLine = (rlcCanvas.height - padding) - ((Vs_plot - yMinVisual) * scaleY);
+                if (yVsLine > padding && yVsLine < rlcCanvas.height - padding) {
+                    rlcCtx.fillText(Vs_plot.toFixed(1) + "V", padding -20, yVsLine + 3);
+                    rlcCtx.beginPath();
+                    rlcCtx.moveTo(padding-2, yVsLine); rlcCtx.lineTo(padding+2, yVsLine);
+                    rlcCtx.stroke();
+                }
+            }
+
+            function clearRLCCanvas(){
+                if(rlcCtx) rlcCtx.clearRect(0, 0, rlcCanvas.width, rlcCanvas.height);
+            }
+
+            if (rlcSimulateBtn) rlcSimulateBtn.addEventListener('click', analyzeRLC);
+            if (rlcRInput) rlcRInput.addEventListener('input', analyzeRLC);
+            if (rlcLInput) rlcLInput.addEventListener('input', analyzeRLC);
+            if (rlcCInput) rlcCInput.addEventListener('input', analyzeRLC);
             
-            plotRLCResponse_ch16(responseFunction_calc, plotTimeMaxFactor_val * (dampingType_str === "Underdamped" ? 3 : 5));
+            analyzeRLC(); // Initial analysis
+        } else {
+            console.error("RLC Canvas element not found!");
         }
 
-        function plotRLCResponse_ch16(responseFunc, tMax) {
-            if (!rlcCtx_ch16 || !responseFunc) return;
-            rlcCtx_ch16.clearRect(0, 0, rlcCanvas_ch16.width, rlcCanvas_ch16.height);
-            rlcCtx_ch16.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim();
-            rlcCtx_ch16.lineWidth = 1.5;
+        // --- Fourier Series Demo Logic (Chapter 17) - FULL ENHANCED ---
+        const numHarmonicsInput = document.getElementById('numHarmonics');
+        const amplitudeFSInput = document.getElementById('amplitudeFS');
+        const fsSimulateBtn = document.getElementById('fsSimulateBtn');
+        const fsCanvas = document.getElementById('fourierSeriesCanvas');
+        const fsCtx = fsCanvas.getContext('2d');
 
-            const padding = 25;
-            const plotWidth = rlcCanvas_ch16.width - 2 * padding;
-            const plotHeight = rlcCanvas_ch16.height - 2 * padding;
-            const Vs_plot_val = 1; 
+        const fourierEquationShortDisplay = document.getElementById('fourierEquationShort');
+        const fourierEquationFullDisplay = document.getElementById('fourierEquationFull');
+        const toggleEquationViewBtn = document.getElementById('toggleEquationViewBtn');
 
-            const yMaxVisual = Vs_plot_val * 1.8; 
-            const yMinVisual = Vs_plot_val * -0.2; 
-            const plotYRange = yMaxVisual - yMinVisual;
-            const scaleY = plotYRange === 0 ? 1 : plotHeight / plotYRange; // Avoid division by zero if range is 0
+        const harmonicCheckboxesContainer = document.getElementById('harmonicCheckboxes');
+        const individualHarmonicsCanvas = document.getElementById('individualHarmonicsCanvas');
+        const individualFsCtx = individualHarmonicsCanvas.getContext('2d');
 
+        let currentHarmonicsDataFs = []; // Renamed to avoid conflict if other demos use similar var names
 
-            rlcCtx_ch16.beginPath();
-            const numPoints = 250;
-            for (let i = 0; i <= numPoints; i++) {
-                const t = (i / numPoints) * tMax;
-                let v_c_val_calc = responseFunc(t);
-                const xPlot = padding + (t / tMax) * plotWidth;
-                const yPlot = (rlcCanvas_ch16.height - padding) - ((v_c_val_calc - yMinVisual) * scaleY);
-                if (i === 0) rlcCtx_ch16.moveTo(xPlot, yPlot);
-                else rlcCtx_ch16.lineTo(xPlot, yPlot);
-            }
-            rlcCtx_ch16.stroke();
+        function generateHarmonicCheckboxesFs(numTermsInSeries) {
+            harmonicCheckboxesContainer.innerHTML = ''; 
+            currentHarmonicsDataFs = []; 
 
-            rlcCtx_ch16.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--highlight-color').trim();
-            rlcCtx_ch16.lineWidth = 1;
-            rlcCtx_ch16.beginPath();
-            const yZeroLine = (rlcCanvas_ch16.height - padding) - ((0 - yMinVisual) * scaleY);
-            rlcCtx_ch16.moveTo(padding, yZeroLine); rlcCtx_ch16.lineTo(rlcCanvas_ch16.width - padding, yZeroLine);
-            rlcCtx_ch16.moveTo(padding, padding); rlcCtx_ch16.lineTo(padding, rlcCanvas_ch16.height - padding);
-            rlcCtx_ch16.stroke();
-            
-            rlcCtx_ch16.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
-            rlcCtx_ch16.font = "10px Segoe UI";
-            rlcCtx_ch16.fillText("t", rlcCanvas_ch16.width - padding + 3, yZeroLine +10);
-            rlcCtx_ch16.fillText("vC(t)", padding -20 , padding -2);
-            rlcCtx_ch16.fillText("0", padding - 10, yZeroLine + 3);
-            const yVsLine = (rlcCanvas_ch16.height - padding) - ((Vs_plot_val - yMinVisual) * scaleY);
-            if (yVsLine > padding -5 && yVsLine < rlcCanvas_ch16.height - padding + 5) { // Check if label is roughly on screen
-                rlcCtx_ch16.fillText(Vs_plot_val.toFixed(1) + "V", padding -20, yVsLine + 3);
-                rlcCtx_ch16.beginPath(); rlcCtx_ch16.moveTo(padding-2, yVsLine); rlcCtx_ch16.lineTo(padding+2, yVsLine); rlcCtx_ch16.stroke();
-            }
-        }
-
-        function clearRLCCanvas_ch16(){ if(rlcCtx_ch16) rlcCtx_ch16.clearRect(0, 0, rlcCanvas_ch16.width, rlcCanvas_ch16.height); }
-
-        if (rlcSimulateBtn_ch16) rlcSimulateBtn_ch16.addEventListener('click', analyzeRLC_ch16);
-        [rlcRInput_ch16, rlcLInput_ch16, rlcCInput_ch16].forEach(el => {
-            if(el) el.addEventListener('input', analyzeRLC_ch16);
-        });
-        if (typeof analyzeRLC_ch16 === 'function') analyzeRLC_ch16();
-    }
-    // --- END RLC Demo ---
-
-
-    // --- Fourier Series Demo Logic (Chapter 17) ---
-    // ... (Fourier Series JS code from previous message goes here)
-    const numHarmonicsInput_fs = document.getElementById('numHarmonics');
-    const amplitudeFSInput_fs = document.getElementById('amplitudeFS');
-    const fsSimulateBtn_fs = document.getElementById('fsSimulateBtn');
-    const fsCanvas_fs = document.getElementById('fourierSeriesCanvas');
-
-    const fourierEquationShortDisplay_fs = document.getElementById('fourierEquationShort');
-    const fourierEquationFullDisplay_fs = document.getElementById('fourierEquationFull');
-    const toggleEquationViewBtn_fs = document.getElementById('toggleEquationViewBtn');
-
-    const harmonicCheckboxesContainer_fs = document.getElementById('harmonicCheckboxes');
-    const individualHarmonicsCanvas_fs = document.getElementById('individualHarmonicsCanvas');
-    
-    if(fsCanvas_fs && individualHarmonicsCanvas_fs) {
-        const fsCtx_fs = fsCanvas_fs.getContext('2d');
-        const individualFsCtx_fs = individualHarmonicsCanvas_fs.getContext('2d');
-        let currentHarmonicsDataFs_arr = []; 
-
-        function generateHarmonicCheckboxesFs_func(numTermsInSeries) {
-            if(!harmonicCheckboxesContainer_fs || !amplitudeFSInput_fs) return;
-            harmonicCheckboxesContainer_fs.innerHTML = ''; 
-            currentHarmonicsDataFs_arr = []; 
-            const A_val = parseFloat(amplitudeFSInput_fs.value);
-            if (isNaN(A_val) || A_val <= 0) return;
-            const omega0_val = 1; 
+            const A = parseFloat(amplitudeFSInput.value);
+            if (isNaN(A) || A <= 0) return;
+            const omega0 = 1; // Assuming T = 2*PI for simplicity
 
             for (let k = 0; k < numTermsInSeries; k++) {
-                const n_harmonic = 2 * k + 1; 
-                const harmonicAmplitude = (4 * A_val / (n_harmonic * Math.PI));
-                currentHarmonicsDataFs_arr.push({ n: n_harmonic, amplitude: harmonicAmplitude, omega0: omega0_val, color: getRandomColorFs_func(), isChecked: true });
+                const n_harmonic = 2 * k + 1; // Square wave uses odd harmonics: 1, 3, 5...
+                const harmonicAmplitude = (4 * A / (n_harmonic * Math.PI));
+                
+                // Store data for this specific harmonic for later plotting
+                currentHarmonicsDataFs.push({ 
+                    n: n_harmonic, 
+                    amplitude: harmonicAmplitude, 
+                    omega0: omega0, 
+                    color: getRandomColorFs(), // Each harmonic gets a color
+                    isChecked: true // Initially checked
+                });
+
                 const checkboxId = `fs_harmonic_n${n_harmonic}`;
                 const label = document.createElement('label');
-                label.htmlFor = checkboxId; label.style.marginRight = '10px'; label.style.display = 'inline-block';
+                label.htmlFor = checkboxId;
+                label.style.marginRight = '10px';
+                label.style.display = 'inline-block'; // Better layout for multiple checkboxes
+                
                 const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox'; checkbox.id = checkboxId; checkbox.value = n_harmonic; checkbox.checked = true; 
-                checkbox.dataset.index = k; 
+                checkbox.type = 'checkbox';
+                checkbox.id = checkboxId;
+                checkbox.value = n_harmonic;
+                checkbox.checked = true; 
+                checkbox.dataset.index = k; // Store index to link to currentHarmonicsDataFs
                 checkbox.addEventListener('change', (event) => {
                     const changedIndex = parseInt(event.target.dataset.index);
-                    if(currentHarmonicsDataFs_arr[changedIndex]) currentHarmonicsDataFs_arr[changedIndex].isChecked = event.target.checked;
-                    plotIndividualHarmonicsFs_func(); 
+                    currentHarmonicsDataFs[changedIndex].isChecked = event.target.checked;
+                    plotIndividualHarmonicsFs(); // Replot individual harmonics
                 });
+                
                 label.appendChild(checkbox);
                 label.appendChild(document.createTextNode(` n=${n_harmonic} (Amp ~${harmonicAmplitude.toFixed(2)})`));
-                harmonicCheckboxesContainer_fs.appendChild(label);
-                if ((k + 1) % 2 === 0 && k < numTermsInSeries -1) harmonicCheckboxesContainer_fs.appendChild(document.createElement('br'));
+                harmonicCheckboxesContainer.appendChild(label);
+                if ((k + 1) % 2 === 0 && k < numTermsInSeries -1) harmonicCheckboxesContainer.appendChild(document.createElement('br'));
             }
-            plotIndividualHarmonicsFs_func(); 
+            plotIndividualHarmonicsFs(); 
         }
-        function getRandomColorFs_func() {
-            const r = Math.floor(Math.random() * 180 + 75); const g = Math.floor(Math.random() * 180 + 75); const b = Math.floor(Math.random() * 180 + 75);
+
+        function getRandomColorFs() {
+            const r = Math.floor(Math.random() * 180 + 75); // Brighter colors
+            const g = Math.floor(Math.random() * 180 + 75);
+            const b = Math.floor(Math.random() * 180 + 75);
             return `rgb(${r},${g},${b})`;
         }
-        function plotIndividualHarmonicsFs_func() {
-            if(!individualFsCtx_fs || !amplitudeFSInput_fs) return;
-            individualFsCtx_fs.clearRect(0, 0, individualHarmonicsCanvas_fs.width, individualHarmonicsCanvas_fs.height);
-            const A_overall_val = parseFloat(amplitudeFSInput_fs.value);
-            const padding = 15; const plotWidth = individualHarmonicsCanvas_fs.width - 2 * padding; const plotHeight = individualHarmonicsCanvas_fs.height - 2 * padding;
-            const maxPossibleFundamentalAmp = (A_overall_val > 0) ? (4 * A_overall_val / Math.PI) : 1;
-            const scaleY = plotYRange === 0 ? 1 : (plotHeight / 2) / (maxPossibleFundamentalAmp * 1.1);
-            const T_fundamental_val = 2 * Math.PI; 
-            individualFsCtx_fs.strokeStyle = 'var(--highlight-color)'; individualFsCtx_fs.lineWidth = 0.5;
-            individualFsCtx_fs.beginPath();
-            individualFsCtx_fs.moveTo(padding, padding/2); individualFsCtx_fs.lineTo(padding, individualHarmonicsCanvas_fs.height - padding/2);
-            individualFsCtx_fs.moveTo(padding, individualHarmonicsCanvas_fs.height / 2); individualFsCtx_fs.lineTo(individualHarmonicsCanvas_fs.width - padding, individualHarmonicsCanvas_fs.height / 2);
-            individualFsCtx_fs.stroke();
-            individualFsCtx_fs.fillStyle = 'var(--text-color)'; individualFsCtx_fs.font = "8px Segoe UI";
-            individualFsCtx_fs.fillText("t", individualHarmonicsCanvas_fs.width - padding + 3, individualHarmonicsCanvas_fs.height / 2 + 3);
-            individualFsCtx_fs.fillText("h(t)", padding -12, padding/2 + 3);
-            if (!currentHarmonicsDataFs_arr) return;
-            currentHarmonicsDataFs_arr.forEach(harmonic => {
+
+        function plotIndividualHarmonicsFs() {
+            individualFsCtx.clearRect(0, 0, individualHarmonicsCanvas.width, individualHarmonicsCanvas.height);
+            const A_overall = parseFloat(amplitudeFSInput.value);
+
+            const padding = 15; // Smaller padding for this smaller canvas
+            const plotWidth = individualHarmonicsCanvas.width - 2 * padding;
+            const plotHeight = individualHarmonicsCanvas.height - 2 * padding;
+            
+            const maxPossibleFundamentalAmp = (A_overall > 0) ? (4 * A_overall / Math.PI) : 1; // Ensure not zero
+            const scaleY = (plotHeight / 2) / (maxPossibleFundamentalAmp * 1.1); 
+
+            const T_fundamental = 2 * Math.PI; // Omega0 = 1
+
+            // Axes for individual harmonics plot
+            individualFsCtx.strokeStyle = 'var(--highlight-color)';
+            individualFsCtx.lineWidth = 0.5;
+            individualFsCtx.beginPath();
+            individualFsCtx.moveTo(padding, padding/2); individualFsCtx.lineTo(padding, individualHarmonicsCanvas.height - padding/2);
+            individualFsCtx.moveTo(padding, individualHarmonicsCanvas.height / 2); individualFsCtx.lineTo(individualHarmonicsCanvas.width - padding, individualHarmonicsCanvas.height / 2);
+            individualFsCtx.stroke();
+            individualFsCtx.fillStyle = 'var(--text-color)';
+            individualFsCtx.font = "8px Segoe UI";
+            individualFsCtx.fillText("t", individualHarmonicsCanvas.width - padding + 3, individualHarmonicsCanvas.height / 2 + 3);
+            individualFsCtx.fillText("h(t)", padding -12, padding/2 + 3);
+
+            if (!currentHarmonicsDataFs) return;
+
+            currentHarmonicsDataFs.forEach(harmonic => {
                 if (harmonic.isChecked) {
-                    individualFsCtx_fs.strokeStyle = harmonic.color; individualFsCtx_fs.lineWidth = 1; individualFsCtx_fs.beginPath();
+                    individualFsCtx.strokeStyle = harmonic.color;
+                    individualFsCtx.lineWidth = 1;
+                    individualFsCtx.beginPath();
                     const points = 150;
                     for (let i = 0; i <= points; i++) {
-                        const t = (i / points) * (1 * T_fundamental_val); 
+                        const t = (i / points) * (1 * T_fundamental); // Plot one period of fundamental
                         const val = harmonic.amplitude * Math.sin(harmonic.n * harmonic.omega0 * t);
-                        const xPlot = padding + (t / (1 * T_fundamental_val)) * plotWidth;
-                        const yPlot = (individualHarmonicsCanvas_fs.height / 2) - val * scaleY;
-                        if (i === 0) individualFsCtx_fs.moveTo(xPlot, yPlot); else individualFsCtx_fs.lineTo(xPlot, yPlot);
+                        const xPlot = padding + (t / (1 * T_fundamental)) * plotWidth;
+                        const yPlot = (individualHarmonicsCanvas.height / 2) - val * scaleY;
+
+                        if (i === 0) individualFsCtx.moveTo(xPlot, yPlot);
+                        else individualFsCtx.lineTo(xPlot, yPlot);
                     }
-                    individualFsCtx_fs.stroke();
+                    individualFsCtx.stroke();
                 }
             });
         }
-        function synthesizeSquareWaveFs_func() {
-            if(!numHarmonicsInput_fs || !amplitudeFSInput_fs || !fourierEquationShortDisplay_fs || !fsCtx_fs || !harmonicCheckboxesContainer_fs || !individualFsCtx_fs) return;
-            const numTermsForSeries = parseInt(numHarmonicsInput_fs.value); const A_val = parseFloat(amplitudeFSInput_fs.value);
-            const T_period_val = 2 * Math.PI; const omega0_val = 1; 
-            if (isNaN(numTermsForSeries) || isNaN(A_val) || numTermsForSeries < 1 || A_val <= 0) {
-                fourierEquationShortDisplay_fs.innerHTML = "Invalid Input"; fourierEquationFullDisplay_fs.innerHTML = "";
-                if(toggleEquationViewBtn_fs) toggleEquationViewBtn_fs.style.display = "none";
-                fsCtx_fs.clearRect(0, 0, fsCanvas_fs.width, fsCanvas_fs.height);
-                harmonicCheckboxesContainer_fs.innerHTML = ''; individualFsCtx_fs.clearRect(0, 0, individualHarmonicsCanvas_fs.width, individualHarmonicsCanvas_fs.height);
-                currentHarmonicsDataFs_arr = []; return;
-            }
-            generateHarmonicCheckboxesFs_func(numTermsForSeries); 
-            let fullEqStr = `f(t) ≈ <sup>(4${A_val.toFixed(2)})</sup>/<sub>π</sub> · [`;
-            let shortEqStr = `f(t) ≈ <sup>(4${A_val.toFixed(2)})</sup>/<sub>π</sub> · [`;
-            fsCtx_fs.clearRect(0, 0, fsCanvas_fs.width, fsCanvas_fs.height);
-            fsCtx_fs.strokeStyle = 'var(--accent-color)'; fsCtx_fs.lineWidth = 1.5;
-            const padding = 20; const plotWidth = fsCanvas_fs.width - 2 * padding; const plotHeight = fsCanvas_fs.height - 2 * padding;
-            const scaleY = plotHeight === 0 ? 1 : (plotHeight / 2) / (A_val * 1.4); 
-            fsCtx_fs.beginPath(); const points = 300;
-            for (let i = 0; i <= points; i++) {
-                const t = (i / points) * (2 * T_period_val); let ft_sum = 0;
-                for (let k = 0; k < numTermsForSeries; k++) {
-                    const n_harmonic_val = 2 * k + 1; 
-                    ft_sum += (4 * A_val / (n_harmonic_val * Math.PI)) * Math.sin(n_harmonic_val * omega0_val * t);
-                }
-                const xPlot = padding + (t / (2 * T_period_val)) * plotWidth;
-                const yPlot = (fsCanvas_fs.height / 2) - ft_sum * scaleY;
-                if (i === 0) fsCtx_fs.moveTo(xPlot, yPlot); else fsCtx_fs.lineTo(xPlot, yPlot);
-            }
-            fsCtx_fs.stroke();
-            const maxTermsInShort = 2;
-            for (let k = 0; k < numTermsForSeries; k++) {
-                const n_h = 2 * k + 1; const termStr = `<sup>1</sup>/<sub>${n_h}</sub>sin(${n_h}ω<sub>0</sub>t)`;
-                if (k > 0) { fullEqStr += " + "; if (k < maxTermsInShort) shortEqStr += " + "; }
-                fullEqStr += termStr; if (k < maxTermsInShort) shortEqStr += termStr;
-            }
-            if (numTermsForSeries > maxTermsInShort) shortEqStr += " + …";
-            fullEqStr += "]"; shortEqStr += "]";
-            fourierEquationShortDisplay_fs.innerHTML = shortEqStr.replace(/ω0/g, 'ω<sub>0</sub>');
-            fourierEquationFullDisplay_fs.innerHTML = fullEqStr.replace(/ω0/g, 'ω<sub>0</sub>');
-            if (toggleEquationViewBtn_fs) {
-                if (numTermsForSeries > maxTermsInShort) {
-                    toggleEquationViewBtn_fs.style.display = "inline-block"; fourierEquationFullDisplay_fs.style.display = "none";
-                    fourierEquationShortDisplay_fs.style.display = "inline-block"; toggleEquationViewBtn_fs.textContent = "View More";
-                } else {
-                    toggleEquationViewBtn_fs.style.display = "none"; fourierEquationFullDisplay_fs.style.display = "none";
-                    fourierEquationShortDisplay_fs.style.display = "inline-block";
-                }
-            }
-            fsCtx_fs.strokeStyle = 'var(--highlight-color)'; fsCtx_fs.lineWidth = 1; fsCtx_fs.beginPath();
-            fsCtx_fs.moveTo(padding, padding/2); fsCtx_fs.lineTo(padding, fsCanvas_fs.height - padding/2);
-            fsCtx_fs.moveTo(padding, fsCanvas_fs.height / 2); fsCtx_fs.lineTo(fsCanvas_fs.width - padding, fsCanvas_fs.height / 2);
-            fsCtx_fs.stroke();
-            fsCtx_fs.fillStyle = 'var(--text-color)'; fsCtx_fs.font = "10px Segoe UI";
-            fsCtx_fs.fillText("t", fsCanvas_fs.width - padding + 5, fsCanvas_fs.height / 2 + 10);
-            fsCtx_fs.fillText("f(t)", padding - 18, padding/2 + 5 );
-        }
-        if(toggleEquationViewBtn_fs) {
-            toggleEquationViewBtn_fs.addEventListener('click', () => {
-                if(!fourierEquationShortDisplay_fs || !fourierEquationFullDisplay_fs || !numHarmonicsInput_fs) return;
-                const isShortCurrentlyVisible = fourierEquationShortDisplay_fs.style.display !== "none";
-                const numTerms = parseInt(numHarmonicsInput_fs.value);
-                if (isShortCurrentlyVisible && numTerms > 2) { 
-                    fourierEquationShortDisplay_fs.style.display = "none"; fourierEquationFullDisplay_fs.style.display = "inline-block";
-                    toggleEquationViewBtn_fs.textContent = "View Less";
-                } else {
-                    fourierEquationShortDisplay_fs.style.display = "inline-block"; fourierEquationFullDisplay_fs.style.display = "none";
-                    toggleEquationViewBtn_fs.textContent = "View More";
-                }
-            });
-        }
-        if (fsSimulateBtn_fs) fsSimulateBtn_fs.addEventListener('click', synthesizeSquareWaveFs_func);
-        if(numHarmonicsInput_fs) numHarmonicsInput_fs.addEventListener('input', synthesizeSquareWaveFs_func); 
-        if(amplitudeFSInput_fs) amplitudeFSInput_fs.addEventListener('input', synthesizeSquareWaveFs_func);
-        if (typeof synthesizeSquareWaveFs_func === 'function') synthesizeSquareWaveFs_func();
-    }
-    // --- END Fourier Series Demo ---
 
+        function synthesizeSquareWaveFs() {
+            const numTermsForSeries = parseInt(numHarmonicsInput.value);
+            const A = parseFloat(amplitudeFSInput.value);
+            const T_period = 2 * Math.PI; 
+            const omega0 = 2 * Math.PI / T_period; // omega0 = 1
 
-    // --- Fourier Transform of Rectangular Pulse Demo (Chapter 18) ---
-    const pulseWidthTInput_ft = document.getElementById('pulseWidthT'); // Suffixed to avoid conflict
-    const ftRectSimulateBtn_ft = document.getElementById('ftRectSimulateBtn');
-    const timeDomainPulseCanvas_ft = document.getElementById('timeDomainPulseCanvas');
-    const freqDomainSpectrumCanvas_ft = document.getElementById('freqDomainSpectrumCanvas');
-
-    if (timeDomainPulseCanvas_ft && freqDomainSpectrumCanvas_ft) {
-        const timeCtx_ft = timeDomainPulseCanvas_ft.getContext('2d');
-        const freqCtx_ft = freqDomainSpectrumCanvas_ft.getContext('2d');
-
-        function drawRectPulseAndSpectrum_ft() {
-            if(!pulseWidthTInput_ft || !timeCtx_ft || !freqCtx_ft) return;
-            const T_pulse_width_val = parseFloat(pulseWidthTInput_ft.value);
-            if (isNaN(T_pulse_width_val) || T_pulse_width_val <= 0) {
-                timeCtx_ft.clearRect(0, 0, timeDomainPulseCanvas_ft.width, timeDomainPulseCanvas_ft.height);
-                freqCtx_ft.clearRect(0, 0, freqDomainSpectrumCanvas_ft.width, freqDomainSpectrumCanvas_ft.height);
+            if (isNaN(numTermsForSeries) || isNaN(A) || numTermsForSeries < 1 || A <= 0) {
+                fourierEquationShortDisplay.innerHTML = "Invalid Input";
+                fourierEquationFullDisplay.innerHTML = "";
+                toggleEquationViewBtn.style.display = "none";
+                fsCtx.clearRect(0, 0, fsCanvas.width, fsCanvas.height);
+                harmonicCheckboxesContainer.innerHTML = ''; 
+                individualFsCtx.clearRect(0, 0, individualHarmonicsCanvas.width, individualHarmonicsCanvas.height);
+                currentHarmonicsDataFs = [];
                 return;
             }
-            const pulseHalfWidth_val = T_pulse_width_val / 2;
-
-            timeCtx_ft.clearRect(0, 0, timeDomainPulseCanvas_ft.width, timeDomainPulseCanvas_ft.height);
-            const timePadding = 30; const timePlotWidth = timeDomainPulseCanvas_ft.width - 2 * timePadding;
-            const timePlotHeight = timeDomainPulseCanvas_ft.height - 2 * timePadding;
-            const tAxisDisplayRange = Math.max(5, T_pulse_width_val * 1.2);
-            const tMinDisplay = -tAxisDisplayRange / 2; const tMaxDisplay = tAxisDisplayRange / 2;
-            const timeScaleX = timePlotWidth / (tMaxDisplay - tMinDisplay);
-            const pulseAmplitudeVisual = timePlotHeight * 0.7; 
-            const yOriginTime = timeDomainPulseCanvas_ft.height - timePadding; 
-            const xOriginTime = timePadding - tMinDisplay * timeScaleX;
-
-            timeCtx_ft.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--highlight-color').trim();
-            timeCtx_ft.lineWidth = 1; timeCtx_ft.beginPath();
-            timeCtx_ft.moveTo(timePadding, yOriginTime); timeCtx_ft.lineTo(timeDomainPulseCanvas_ft.width - timePadding, yOriginTime);
-            timeCtx_ft.moveTo(xOriginTime, timePadding); timeCtx_ft.lineTo(xOriginTime, timeDomainPulseCanvas_ft.height - timePadding);
-            timeCtx_ft.stroke();
-            timeCtx_ft.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
-            timeCtx_ft.font = "10px Segoe UI";
-            timeCtx_ft.fillText("t", timeDomainPulseCanvas_ft.width - timePadding + 5, yOriginTime + 10);
-            timeCtx_ft.fillText("f(t)", xOriginTime + 5, timePadding - 5);
-            timeCtx_ft.fillText("0", xOriginTime - 10, yOriginTime + 12);
-            timeCtx_ft.fillText(pulseHalfWidth_val.toFixed(1), xOriginTime + pulseHalfWidth_val * timeScaleX - 5, yOriginTime + 12);
-            timeCtx_ft.beginPath(); timeCtx_ft.moveTo(xOriginTime + pulseHalfWidth_val * timeScaleX, yOriginTime-3); timeCtx_ft.lineTo(xOriginTime + pulseHalfWidth_val * timeScaleX, yOriginTime+3); timeCtx_ft.stroke();
-            timeCtx_ft.fillText(`-${pulseHalfWidth_val.toFixed(1)}`, xOriginTime - pulseHalfWidth_val * timeScaleX - 10, yOriginTime + 12);
-            timeCtx_ft.beginPath(); timeCtx_ft.moveTo(xOriginTime - pulseHalfWidth_val * timeScaleX, yOriginTime-3); timeCtx_ft.lineTo(xOriginTime - pulseHalfWidth_val * timeScaleX, yOriginTime+3); timeCtx_ft.stroke();
-            timeCtx_ft.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim();
-            const pulseXStartVisual = xOriginTime - pulseHalfWidth_val * timeScaleX;
-            const pulseWidthVisual = T_pulse_width_val * timeScaleX;
-            timeCtx_ft.fillRect(pulseXStartVisual, yOriginTime - pulseAmplitudeVisual, pulseWidthVisual, pulseAmplitudeVisual);
-            timeCtx_ft.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
-            timeCtx_ft.fillText("1", xOriginTime -15 , yOriginTime - pulseAmplitudeVisual - 2);
-
-            freqCtx_ft.clearRect(0, 0, freqDomainSpectrumCanvas_ft.width, freqDomainSpectrumCanvas_ft.height);
-            const freqPadding = 30; const freqPlotWidth = freqDomainSpectrumCanvas_ft.width - 2 * freqPadding;
-            const freqPlotHeight = freqDomainSpectrumCanvas_ft.height - 2 * freqPadding;
-            const firstZeroOmega = (2 * Math.PI) / T_pulse_width_val;
-            const omegaAxisDisplayMax = Math.max(3 * firstZeroOmega, 10); 
-            const omegaMinDisplay = -omegaAxisDisplayMax; const omegaMaxDisplay = omegaAxisDisplayMax;
-            const scaleXFreq = freqPlotWidth / (omegaMaxDisplay - omegaMinDisplay); 
-            const yOriginFreq = freqDomainSpectrumCanvas_ft.height - freqPadding;
-            const xOriginFreq = freqPadding - omegaMinDisplay * scaleXFreq;
-            const maxSincVal = T_pulse_width_val; 
-            const scaleYFreq = plotYRange === 0 ? 1 : freqPlotHeight / (maxSincVal * 1.1); 
-
-            freqCtx_ft.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--highlight-color').trim();
-            freqCtx_ft.lineWidth = 1; freqCtx_ft.beginPath();
-            freqCtx_ft.moveTo(freqPadding, yOriginFreq); freqCtx_ft.lineTo(freqDomainSpectrumCanvas_ft.width - freqPadding, yOriginFreq);
-            freqCtx_ft.moveTo(xOriginFreq, freqPadding); freqCtx_ft.lineTo(xOriginFreq, freqDomainSpectrumCanvas_ft.height - freqPadding);
-            freqCtx_ft.stroke();
-            freqCtx_ft.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
-            freqCtx_ft.font = "10px Segoe UI";
-            freqCtx_ft.fillText("ω", freqDomainSpectrumCanvas_ft.width - freqPadding + 5, yOriginFreq + 10);
-            freqCtx_ft.fillText("|F(jω)|", xOriginFreq + 5, freqPadding - 5);
-            freqCtx_ft.fillText("0", xOriginFreq - 10, yOriginFreq + 12);
-            freqCtx_ft.fillText(`${firstZeroOmega.toFixed(1)}`, xOriginFreq + firstZeroOmega*scaleXFreq -5, yOriginFreq+12);
-            freqCtx_ft.beginPath(); freqCtx_ft.moveTo(xOriginFreq + firstZeroOmega*scaleXFreq, yOriginFreq-3); freqCtx_ft.lineTo(xOriginFreq + firstZeroOmega*scaleXFreq, yOriginFreq+3); freqCtx_ft.stroke();
-            freqCtx_ft.fillText(`-${firstZeroOmega.toFixed(1)}`, xOriginFreq - firstZeroOmega*scaleXFreq -10, yOriginFreq+12);
-            freqCtx_ft.beginPath(); freqCtx_ft.moveTo(xOriginFreq - firstZeroOmega*scaleXFreq, yOriginFreq-3); freqCtx_ft.lineTo(xOriginFreq - firstZeroOmega*scaleXFreq, yOriginFreq+3); freqCtx_ft.stroke();
             
-            freqCtx_ft.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim();
-            freqCtx_ft.lineWidth = 1.5; freqCtx_ft.beginPath();
-            const numFreqPoints = 400; let firstMove = true;
+            generateHarmonicCheckboxesFs(numTermsForSeries); 
+
+            let fullEqStr = `f(t) ≈ <sup>(4${A.toFixed(2)})</sup>/<sub>π</sub> · [`;
+            let shortEqStr = `f(t) ≈ <sup>(4${A.toFixed(2)})</sup>/<sub>π</sub> · [`;
+            
+            fsCtx.clearRect(0, 0, fsCanvas.width, fsCanvas.height);
+            fsCtx.strokeStyle = 'var(--accent-color)';
+            fsCtx.lineWidth = 1.5;
+
+            const padding = 20;
+            const plotWidth = fsCanvas.width - 2 * padding;
+            const plotHeight = fsCanvas.height - 2 * padding;
+            const scaleY = (plotHeight / 2) / (A * 1.4);  // Give some headroom
+
+            fsCtx.beginPath();
+            const points = 300;
+            for (let i = 0; i <= points; i++) {
+                const t = (i / points) * (2 * T_period); 
+                let ft_sum = 0;
+                
+                for (let k = 0; k < numTermsForSeries; k++) {
+                    const n_harmonic_val = 2 * k + 1; 
+                    ft_sum += (4 * A / (n_harmonic_val * Math.PI)) * Math.sin(n_harmonic_val * omega0 * t);
+                }
+
+                const xPlot = padding + (t / (2 * T_period)) * plotWidth;
+                const yPlot = (fsCanvas.height / 2) - ft_sum * scaleY;
+
+                if (i === 0) fsCtx.moveTo(xPlot, yPlot);
+                else fsCtx.lineTo(xPlot, yPlot);
+            }
+            fsCtx.stroke();
+
+            // Construct equation strings carefully
+            const maxTermsInShort = 2;
+            for (let k = 0; k < numTermsForSeries; k++) {
+                const n_h = 2 * k + 1;
+                const termStr = `<sup>1</sup>/<sub>${n_h}</sub>sin(${n_h}ω<sub>0</sub>t)`;
+                if (k > 0) {
+                    fullEqStr += " + ";
+                    if (k < maxTermsInShort) shortEqStr += " + ";
+                }
+                fullEqStr += termStr;
+                if (k < maxTermsInShort) shortEqStr += termStr;
+            }
+
+            if (numTermsForSeries > maxTermsInShort) {
+                shortEqStr += " + …";
+            }
+            fullEqStr += "]";
+            shortEqStr += "]";
+
+            fourierEquationShortDisplay.innerHTML = shortEqStr.replace(/ω0/g, 'ω<sub>0</sub>');
+            fourierEquationFullDisplay.innerHTML = fullEqStr.replace(/ω0/g, 'ω<sub>0</sub>');
+
+
+            if (numTermsForSeries > maxTermsInShort) {
+                toggleEquationViewBtn.style.display = "inline-block";
+                fourierEquationFullDisplay.style.display = "none";
+                fourierEquationShortDisplay.style.display = "inline-block";
+                toggleEquationViewBtn.textContent = "View More";
+            } else {
+                toggleEquationViewBtn.style.display = "none";
+                fourierEquationFullDisplay.style.display = "none";
+                fourierEquationShortDisplay.style.display = "inline-block";
+            }
+            
+            // Draw Axes for combined plot
+            fsCtx.strokeStyle = 'var(--highlight-color)';
+            fsCtx.lineWidth = 1;
+            fsCtx.beginPath();
+            fsCtx.moveTo(padding, padding/2); fsCtx.lineTo(padding, fsCanvas.height - padding/2); // Y
+            fsCtx.moveTo(padding, fsCanvas.height / 2); fsCtx.lineTo(fsCanvas.width - padding, fsCanvas.height / 2); // X
+            fsCtx.stroke();
+            fsCtx.fillStyle = 'var(--text-color)';
+            fsCtx.font = "10px Segoe UI";
+            fsCtx.fillText("t", fsCanvas.width - padding + 5, fsCanvas.height / 2 + 10);
+            fsCtx.fillText("f(t)", padding - 18, padding/2 + 5 );
+        }
+
+        toggleEquationViewBtn.addEventListener('click', () => {
+            const isShortCurrentlyVisible = fourierEquationShortDisplay.style.display !== "none";
+            const numTerms = parseInt(numHarmonicsInput.value);
+            if (isShortCurrentlyVisible && numTerms > 2) { // Only toggle if full is different
+                fourierEquationShortDisplay.style.display = "none";
+                fourierEquationFullDisplay.style.display = "inline-block";
+                toggleEquationViewBtn.textContent = "View Less";
+            } else {
+                fourierEquationShortDisplay.style.display = "inline-block";
+                fourierEquationFullDisplay.style.display = "none";
+                toggleEquationViewBtn.textContent = "View More";
+            }
+        });
+
+        // Event listeners
+        fsSimulateBtn.addEventListener('click', synthesizeSquareWaveFs);
+        numHarmonicsInput.addEventListener('input', synthesizeSquareWaveFs); // Using 'input' for more responsiveness
+        amplitudeFSInput.addEventListener('input', synthesizeSquareWaveFs);
+
+        // Initial synthesis call
+        synthesizeSquareWaveFs();
+
+        // --- Fourier Transform of Rectangular Pulse Demo (Chapter 18) ---
+        const pulseWidthTInput = document.getElementById('pulseWidthT');
+        const ftRectSimulateBtn = document.getElementById('ftRectSimulateBtn');
+        const timeDomainPulseCanvas = document.getElementById('timeDomainPulseCanvas');
+        const freqDomainSpectrumCanvas = document.getElementById('freqDomainSpectrumCanvas');
+        const timeCtx = timeDomainPulseCanvas.getContext('2d');
+        const freqCtx = freqDomainSpectrumCanvas.getContext('2d');
+
+        function drawRectPulseAndSpectrum() {
+            const T = parseFloat(pulseWidthTInput.value);
+            if (isNaN(T) || T <= 0) {
+                timeCtx.clearRect(0, 0, timeDomainPulseCanvas.width, timeDomainPulseCanvas.height);
+                freqCtx.clearRect(0, 0, freqDomainSpectrumCanvas.width, freqDomainSpectrumCanvas.height);
+                return;
+            }
+
+            // --- Time Domain Plot (Rectangular Pulse) ---
+            timeCtx.clearRect(0, 0, timeDomainPulseCanvas.width, timeDomainPulseCanvas.height);
+            const timePadding = 20;
+            const timePlotWidth = timeDomainPulseCanvas.width - 2 * timePadding;
+            const timePlotHeight = timeDomainPulseCanvas.height - 2 * timePadding;
+            const timeScaleX = timePlotWidth / (2 * T); // Show from -T to T
+            const pulseHeight = timePlotHeight * 0.6; // Height of pulse for visual
+
+            // Axes for time domain
+            timeCtx.strokeStyle = 'var(--highlight-color)';
+            timeCtx.lineWidth = 1;
+            timeCtx.beginPath();
+            timeCtx.moveTo(timePadding, timeDomainPulseCanvas.height - timePadding); // X-axis (t)
+            timeCtx.lineTo(timeDomainPulseCanvas.width - timePadding, timeDomainPulseCanvas.height - timePadding);
+            timeCtx.moveTo(timeDomainPulseCanvas.width / 2, timePadding); // Y-axis (f(t))
+            timeCtx.lineTo(timeDomainPulseCanvas.width / 2, timeDomainPulseCanvas.height - timePadding);
+            timeCtx.stroke();
+            timeCtx.fillStyle = 'var(--text-color)';
+            timeCtx.font = "10px Segoe UI";
+            timeCtx.fillText("t", timeDomainPulseCanvas.width - timePadding + 5, timeDomainPulseCanvas.height - timePadding - 5);
+            timeCtx.fillText("f(t)", timeDomainPulseCanvas.width/2 + 5, timePadding + 5);
+            timeCtx.fillText("0", timeDomainPulseCanvas.width/2 - 10, timeDomainPulseCanvas.height - timePadding + 10);
+            timeCtx.fillText("-T/2", timeDomainPulseCanvas.width/2 - (T/2)*timeScaleX -10 , timeDomainPulseCanvas.height - timePadding +10);
+            timeCtx.fillText("T/2", timeDomainPulseCanvas.width/2 + (T/2)*timeScaleX -5, timeDomainPulseCanvas.height - timePadding +10);
+
+
+            // Draw pulse
+            timeCtx.fillStyle = 'var(--accent-color)';
+            timeCtx.fillRect(
+                timeDomainPulseCanvas.width / 2 - (T / 2) * timeScaleX, // x start
+                timeDomainPulseCanvas.height - timePadding - pulseHeight,      // y start
+                T * timeScaleX,                                           // width
+                pulseHeight                                               // height
+            );
+            timeCtx.fillStyle = 'var(--text-color)';
+            timeCtx.fillText("1", timeDomainPulseCanvas.width / 2 -15 , timeDomainPulseCanvas.height - timePadding - pulseHeight - 2);
+
+
+            // --- Frequency Domain Plot (Magnitude of Sinc) ---
+            freqCtx.clearRect(0, 0, freqDomainSpectrumCanvas.width, freqDomainSpectrumCanvas.height);
+            const freqPadding = 20;
+            const freqPlotWidth = freqDomainSpectrumCanvas.width - 2 * freqPadding;
+            const freqPlotHeight = freqDomainSpectrumCanvas.height - 2 * freqPadding;
+            
+            // Omega range for plotting - where sinc has a few lobes
+            // Zeros of sinc(omega*T/2) occur when omega*T/2 = n*pi, so omega = 2*n*pi/T
+            const omegaMax = (4 * Math.PI * 2) / T; // Show a few main lobes
+            const scaleXFreq = freqPlotWidth / (2 * omegaMax); // from -omegaMax to +omegaMax
+            const scaleYFreq = freqPlotHeight / (T * 1.1); // Max value of T*sinc(0) is T
+
+            // Axes for frequency domain
+            freqCtx.strokeStyle = 'var(--highlight-color)';
+            freqCtx.lineWidth = 1;
+            freqCtx.beginPath();
+            freqCtx.moveTo(freqPadding, freqDomainSpectrumCanvas.height - freqPadding); // X-axis (omega)
+            freqCtx.lineTo(freqDomainSpectrumCanvas.width - freqPadding, freqDomainSpectrumCanvas.height - freqPadding);
+            freqCtx.moveTo(freqDomainSpectrumCanvas.width / 2, freqPadding); // Y-axis |F(jw)|
+            freqCtx.lineTo(freqDomainSpectrumCanvas.width / 2, freqDomainSpectrumCanvas.height - freqPadding);
+            freqCtx.stroke();
+            freqCtx.fillStyle = 'var(--text-color)';
+            freqCtx.font = "10px Segoe UI";
+            freqCtx.fillText("ω", freqDomainSpectrumCanvas.width - freqPadding + 5, freqDomainSpectrumCanvas.height - freqPadding - 5);
+            freqCtx.fillText("|F(jω)|", freqDomainSpectrumCanvas.width/2 + 5, freqPadding + 5);
+            freqCtx.fillText("0", freqDomainSpectrumCanvas.width/2 - 10, freqDomainSpectrumCanvas.height - freqPadding + 10);
+
+
+            freqCtx.strokeStyle = 'var(--accent-color)';
+            freqCtx.lineWidth = 1.5;
+            freqCtx.beginPath();
+
+            const numFreqPoints = 400;
             for (let i = 0; i <= numFreqPoints; i++) {
-                const omega = omegaMinDisplay + (i / numFreqPoints) * (omegaMaxDisplay - omegaMinDisplay);
-                let sincMagnitude; const arg = omega * T_pulse_width_val / 2;
-                if (Math.abs(arg) < 1e-6) { sincMagnitude = T_pulse_width_val; } 
-                else { sincMagnitude = T_pulse_width_val * (Math.sin(arg) / arg); }
-                const xPlotFreq = xOriginFreq + omega * scaleXFreq;
-                const yPlotFreq = yOriginFreq - Math.abs(sincMagnitude) * scaleYFreq; 
-                if (firstMove) { freqCtx_ft.moveTo(xPlotFreq, yPlotFreq); firstMove = false; } 
-                else { freqCtx_ft.lineTo(xPlotFreq, yPlotFreq); }
+                const omega = -omegaMax + (i / numFreqPoints) * (2 * omegaMax);
+                let sincVal;
+                if (omega === 0) {
+                    sincVal = T; // Limit of T * sin(x)/x as x->0 is T
+                } else {
+                    sincVal = T * (Math.sin(omega * T / 2) / (omega * T / 2));
+                }
+                
+                const xPlotFreq = freqDomainSpectrumCanvas.width / 2 + omega * scaleXFreq;
+                const yPlotFreq = freqDomainSpectrumCanvas.height - freqPadding - Math.abs(sincVal) * scaleYFreq; // Plotting magnitude
+
+                if (i === 0 || Math.abs(omega * scaleXFreq) < 0.1 ) { // handle move to for omega near 0 due to discrete points
+                    freqCtx.moveTo(xPlotFreq, yPlotFreq);
+                } else {
+                    freqCtx.lineTo(xPlotFreq, yPlotFreq);
+                }
             }
-            freqCtx_ft.stroke();
-            if (maxSincVal * scaleYFreq > 5) { 
-                freqCtx_ft.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
-                freqCtx_ft.fillText(T_pulse_width_val.toFixed(1), xOriginFreq + 3 , yOriginFreq - maxSincVal * scaleYFreq - 2);
+            freqCtx.stroke();
+            freqCtx.fillStyle = 'var(--text-color)';
+            freqCtx.fillText(T.toFixed(1), freqDomainSpectrumCanvas.width / 2 + 3 , freqDomainSpectrumCanvas.height - freqPadding - T * scaleYFreq - 2);
+            freqCtx.fillText(`2π/T`, freqDomainSpectrumCanvas.width / 2 + (2*Math.PI/T)*scaleXFreq -10 , freqDomainSpectrumCanvas.height - freqPadding + 10);
+            freqCtx.fillText(`-2π/T`, freqDomainSpectrumCanvas.width / 2 - (2*Math.PI/T)*scaleXFreq -15 , freqDomainSpectrumCanvas.height - freqPadding + 10);
+
+
+        }
+
+        ftRectSimulateBtn.addEventListener('click', drawRectPulseAndSpectrum);
+        pulseWidthTInput.addEventListener('input', drawRectPulseAndSpectrum);
+
+        // Initial draw
+        drawRectPulseAndSpectrum();
+
+        // --- Two-Port Network Demo (Voltage Divider Z11, Z21) - Chapter 19 ---
+        const tpR1Input = document.getElementById('tpR1');
+        const tpR2Input = document.getElementById('tpR2');
+        const tpV1Input = document.getElementById('tpV1');
+        const tpSimulateBtn = document.getElementById('tpSimulateBtn');
+
+        const tpZ11Display = document.getElementById('tpZ11');
+        const tpZ21Display = document.getElementById('tpZ21');
+        const tpI1CalcDisplay = document.getElementById('tpI1_calc');
+        const tpV2CalcDisplay = document.getElementById('tpV2_calc');
+
+        function calculateTwoPortVoltageDivider() {
+            if (!tpR1Input || !tpR2Input || !tpV1Input || !tpZ11Display || !tpZ21Display || !tpI1CalcDisplay || !tpV2CalcDisplay) {
+                console.error("Two-port demo elements not found");
+                return;
+            }
+
+            const R1 = parseFloat(tpR1Input.value);
+            const R2 = parseFloat(tpR2Input.value);
+            const V1_applied = parseFloat(tpV1Input.value);
+
+            if (isNaN(R1) || isNaN(R2) || R1 <= 0 || R2 <= 0 || isNaN(V1_applied)) {
+                tpZ11Display.textContent = "Invalid";
+                tpZ21Display.textContent = "Invalid";
+                tpI1CalcDisplay.textContent = "Invalid";
+                tpV2CalcDisplay.textContent = "Invalid";
+                return;
+            }
+
+            // Calculate Z11 and Z21 (when I2 = 0, i.e., Port 2 is open)
+            // Z11 = V1/I1 | I2=0
+            // When I2=0, R1 and R2 are in series from Port 1's perspective.
+            // I1 = V1 / (R1 + R2)
+            // So, Z11 = V1 / (V1 / (R1 + R2)) = R1 + R2
+            const Z11 = R1 + R2;
+            tpZ11Display.textContent = Z11.toFixed(2);
+
+            // Z21 = V2/I1 | I2=0
+            // V2 (open circuit voltage at Port 2) is the voltage across R2.
+            // V2 = I1 * R2
+            // So, Z21 = (I1 * R2) / I1 = R2
+            const Z21 = R2;
+            tpZ21Display.textContent = Z21.toFixed(2);
+
+            // Now, if V1_applied is the input voltage V1 for this condition (I2=0):
+            const I1_calculated = V1_applied / Z11; // Since Z11 is input impedance when I2=0
+            const V2_calculated = I1_calculated * Z21; // Since Z21 = V2/I1 when I2=0
+
+            tpI1CalcDisplay.textContent = I1_calculated.toFixed(3);
+            tpV2CalcDisplay.textContent = V2_calculated.toFixed(3);
+        }
+
+        if (tpSimulateBtn) {
+            tpSimulateBtn.addEventListener('click', calculateTwoPortVoltageDivider);
+        }
+        if (tpR1Input) tpR1Input.addEventListener('input', calculateTwoPortVoltageDivider);
+        if (tpR2Input) tpR2Input.addEventListener('input', calculateTwoPortVoltageDivider);
+        if (tpV1Input) tpV1Input.addEventListener('input', calculateTwoPortVoltageDivider);
+
+
+        // Initial calculation for two-port demo
+        if (typeof calculateTwoPortVoltageDivider === 'function') {
+            calculateTwoPortVoltageDivider();
+        }
+
+        // --- 2x2 System Solver Demo (Appendix A) ---
+        const matA11_input = document.getElementById('matA11');
+        const matA12_input = document.getElementById('matA12');
+        const matB1_input = document.getElementById('matB1');
+        const matA21_input = document.getElementById('matA21');
+        const matA22_input = document.getElementById('matA22');
+        const matB2_input = document.getElementById('matB2');
+        const solveMatrixBtn = document.getElementById('solveMatrixBtn');
+
+        const detAValDisplay = document.getElementById('detAVal');
+        const solXDisplay = document.getElementById('solX');
+        const solYDisplay = document.getElementById('solY');
+        const matrixInverseDisplay = document.getElementById('matrixInverseDisplay');
+
+        function solve2x2System() {
+            if (!matA11_input || !matA12_input || !matB1_input || !matA21_input || !matA22_input || !matB2_input ||
+                !detAValDisplay || !solXDisplay || !solYDisplay || !matrixInverseDisplay) {
+                console.error("Matrix demo elements not found.");
+                return;
+            }
+
+            const a = parseFloat(matA11_input.value);
+            const b = parseFloat(matA12_input.value);
+            const e_val = parseFloat(matB1_input.value); // Using e_val to avoid conflict with exp function 'e'
+            const c = parseFloat(matA21_input.value);
+            const d = parseFloat(matA22_input.value);
+            const f_val = parseFloat(matB2_input.value); // Using f_val
+
+            if (isNaN(a) || isNaN(b) || isNaN(e_val) || isNaN(c) || isNaN(d) || isNaN(f_val)) {
+                detAValDisplay.textContent = "Invalid";
+                solXDisplay.textContent = "Invalid Input";
+                solYDisplay.textContent = "Invalid Input";
+                matrixInverseDisplay.innerHTML = "";
+                return;
+            }
+
+            const detA = a * d - b * c;
+            detAValDisplay.textContent = detA.toFixed(4);
+
+            if (Math.abs(detA) < 1e-9) { // Determinant is (close to) zero
+                solXDisplay.textContent = "No unique solution (det A = 0)";
+                solYDisplay.textContent = "";
+                matrixInverseDisplay.innerHTML = "Matrix A is singular (no inverse).";
+                return;
+            }
+
+            // Using matrix inversion: X = A_inv * B
+            // A_inv = (1/detA) * [[d, -b], [-c, a]]
+            const x_sol = (1 / detA) * (d * e_val - b * f_val);
+            const y_sol = (1 / detA) * (-c * e_val + a * f_val);
+
+            solXDisplay.textContent = x_sol.toFixed(4);
+            solYDisplay.textContent = y_sol.toFixed(4);
+
+            // Display inverse matrix A_inv
+            const inv_d = d / detA;
+            const inv_neg_b = -b / detA;
+            const inv_neg_c = -c / detA;
+            const inv_a = a / detA;
+
+            matrixInverseDisplay.innerHTML = `
+                <p>Inverse Matrix A<sup>-1</sup> = (1/${detA.toFixed(2)}) · 
+                <table style="display:inline-block; vertical-align:middle; border: 1px solid var(--text-color); margin-left:5px;">
+                    <tr><td style="padding:3px;">${d.toFixed(2)}</td><td style="padding:3px;">${(-b).toFixed(2)}</td></tr>
+                    <tr><td style="padding:3px;">${(-c).toFixed(2)}</td><td style="padding:3px;">${a.toFixed(2)}</td></tr>
+                </table>
+                = 
+                <table style="display:inline-block; vertical-align:middle; border: 1px solid var(--text-color); margin-left:5px;">
+                    <tr><td style="padding:3px;">${inv_d.toFixed(3)}</td><td style="padding:3px;">${inv_neg_b.toFixed(3)}</td></tr>
+                    <tr><td style="padding:3px;">${inv_neg_c.toFixed(3)}</td><td style="padding:3px;">${inv_a.toFixed(3)}</td></tr>
+                </table>
+                </p>
+            `;
+        }
+
+        if (solveMatrixBtn) {
+            solveMatrixBtn.addEventListener('click', solve2x2System);
+        }
+        // Add event listeners to inputs to recalculate on change
+        const matrixDemoInputs = [matA11_input, matA12_input, matB1_input, matA21_input, matA22_input, matB2_input];
+        matrixDemoInputs.forEach(input => {
+            if (input) input.addEventListener('input', solve2x2System);
+        });
+
+        // Initial calculation for matrix demo
+        if (typeof solve2x2System === 'function') { // Check if function is defined
+            solve2x2System();
+        }
+
+        // --- Complex Number Operations Demo (Appendix B) ---
+        const z1ReInput = document.getElementById('z1_re');
+        const z1ImInput = document.getElementById('z1_im');
+        const z2ReInput = document.getElementById('z2_re');
+        const z2ImInput = document.getElementById('z2_im');
+        const complexOpBtn = document.getElementById('complexOpBtn');
+
+        const z1Display = document.getElementById('z1_display');
+        const z1PolarDisplay = document.getElementById('z1_polar_display');
+        const z2Display = document.getElementById('z2_display');
+        const z2PolarDisplay = document.getElementById('z2_polar_display');
+        const zAddDisplay = document.getElementById('z_add_display');
+        const zSubDisplay = document.getElementById('z_sub_display');
+        const zMulDisplay = document.getElementById('z_mul_display');
+        const zMulPolarDisplay = document.getElementById('z_mul_polar_display');
+        const zDivDisplay = document.getElementById('z_div_display');
+        const zDivPolarDisplay = document.getElementById('z_div_polar_display');
+
+        // Helper class for complex numbers
+        class Complex {
+            constructor(re = 0, im = 0) {
+                this.re = re;
+                this.im = im;
+            }
+
+            static fromPolar(r, thetaRad) {
+                return new Complex(r * Math.cos(thetaRad), r * Math.sin(thetaRad));
+            }
+
+            get magnitude() {
+                return Math.sqrt(this.re * this.re + this.im * this.im);
+            }
+
+            get angleRad() {
+                return Math.atan2(this.im, this.re);
+            }
+
+            get angleDeg() {
+                return this.angleRad * 180 / Math.PI;
+            }
+
+            add(other) {
+                return new Complex(this.re + other.re, this.im + other.im);
+            }
+
+            subtract(other) {
+                return new Complex(this.re - other.re, this.im - other.im);
+            }
+
+            multiply(other) {
+                // (a+jb)(c+jd) = (ac-bd) + j(ad+bc)
+                const re = this.re * other.re - this.im * other.im;
+                const im = this.re * other.im + this.im * other.re;
+                return new Complex(re, im);
+            }
+
+            conjugate() {
+                return new Complex(this.re, -this.im);
+            }
+
+            divide(other) {
+                const denominator = other.re * other.re + other.im * other.im;
+                if (denominator === 0) return new Complex(NaN, NaN); // Division by zero
+                const numerator = this.multiply(other.conjugate());
+                return new Complex(numerator.re / denominator, numerator.im / denominator);
+            }
+
+            toString(digits = 2) {
+                const imSign = this.im < 0 ? "-" : "+";
+                return `${this.re.toFixed(digits)} ${imSign} j${Math.abs(this.im).toFixed(digits)}`;
+            }
+
+            toPolarString(digits = 2) {
+                return `${this.magnitude.toFixed(digits)} ∠ ${this.angleDeg.toFixed(digits)}°`;
             }
         }
-        if(ftRectSimulateBtn_ft) ftRectSimulateBtn_ft.addEventListener('click', drawRectPulseAndSpectrum_ft);
-        if(pulseWidthTInput_ft) pulseWidthTInput_ft.addEventListener('input', drawRectPulseAndSpectrum_ft);
-        if(typeof drawRectPulseAndSpectrum_ft === 'function') drawRectPulseAndSpectrum_ft();
-    }
-    // --- END Fourier Transform Demo ---
 
 
-    // --- Two-Port Network Demo (Voltage Divider Z11, Z21) - Chapter 19 ---
-    const tpR1Input_ch19 = document.getElementById('tpR1'); // Suffixed
-    const tpR2Input_ch19 = document.getElementById('tpR2');
-    const tpV1Input_ch19 = document.getElementById('tpV1');
-    const tpSimulateBtn_ch19 = document.getElementById('tpSimulateBtn');
-    const tpZ11Display_ch19 = document.getElementById('tpZ11');
-    const tpZ21Display_ch19 = document.getElementById('tpZ21');
-    const tpI1CalcDisplay_ch19 = document.getElementById('tpI1_calc');
-    const tpV2CalcDisplay_ch19 = document.getElementById('tpV2_calc');
+        function calculateComplexOperations() {
+            if(!z1ReInput || !z1Display ) { // Quick check if elements exist
+                console.error("Complex number demo elements not found!");
+                return;
+            }
 
-    function calculateTwoPortVoltageDivider_ch19() {
-        if (!tpR1Input_ch19 || !tpR2Input_ch19 || !tpV1Input_ch19 || !tpZ11Display_ch19 || !tpZ21Display_ch19 || !tpI1CalcDisplay_ch19 || !tpV2CalcDisplay_ch19) { return; }
-        const R1_val = parseFloat(tpR1Input_ch19.value); const R2_val = parseFloat(tpR2Input_ch19.value);
-        const V1_applied_val = parseFloat(tpV1Input_ch19.value);
-        if (isNaN(R1_val) || isNaN(R2_val) || R1_val <= 0 || R2_val <= 0 || isNaN(V1_applied_val)) {
-            tpZ11Display_ch19.textContent = "Inv"; tpZ21Display_ch19.textContent = "Inv";
-            tpI1CalcDisplay_ch19.textContent = "Input"; tpV2CalcDisplay_ch19.textContent = "Input"; return;
+            const z1 = new Complex(parseFloat(z1ReInput.value), parseFloat(z1ImInput.value));
+            const z2 = new Complex(parseFloat(z2ReInput.value), parseFloat(z2ImInput.value));
+
+            if (isNaN(z1.re) || isNaN(z1.im) || isNaN(z2.re) || isNaN(z2.im)) {
+                z1Display.textContent = "Invalid"; z1PolarDisplay.textContent = "";
+                z2Display.textContent = "Invalid"; z2PolarDisplay.textContent = "";
+                zAddDisplay.textContent = "Invalid Input"; zSubDisplay.textContent = "";
+                zMulDisplay.textContent = ""; zMulPolarDisplay.textContent = "";
+                zDivDisplay.textContent = ""; zDivPolarDisplay.textContent = "";
+                return;
+            }
+
+            z1Display.textContent = z1.toString();
+            z1PolarDisplay.textContent = z1.toPolarString();
+            z2Display.textContent = z2.toString();
+            z2PolarDisplay.textContent = z2.toPolarString();
+
+            const sum = z1.add(z2);
+            zAddDisplay.textContent = sum.toString();
+
+            const diff = z1.subtract(z2);
+            zSubDisplay.textContent = diff.toString();
+
+            const prod = z1.multiply(z2);
+            zMulDisplay.textContent = prod.toString();
+            zMulPolarDisplay.textContent = prod.toPolarString();
+
+            const quot = z1.divide(z2);
+            if (isNaN(quot.re)) {
+                zDivDisplay.textContent = "Div by zero";
+                zDivPolarDisplay.textContent = "";
+            } else {
+                zDivDisplay.textContent = quot.toString();
+                zDivPolarDisplay.textContent = quot.toPolarString();
+            }
         }
-        const Z11_val = R1_val + R2_val; tpZ11Display_ch19.textContent = Z11_val.toFixed(2);
-        const Z21_val = R2_val; tpZ21Display_ch19.textContent = Z21_val.toFixed(2);
-        const I1_calculated_val = V1_applied_val / Z11_val; 
-        const V2_calculated_val = I1_calculated_val * Z21_val; 
-        tpI1CalcDisplay_ch19.textContent = I1_calculated_val.toFixed(3);
-        tpV2CalcDisplay_ch19.textContent = V2_calculated_val.toFixed(3);
-    }
-    if (tpSimulateBtn_ch19) tpSimulateBtn_ch19.addEventListener('click', calculateTwoPortVoltageDivider_ch19);
-    [tpR1Input_ch19, tpR2Input_ch19, tpV1Input_ch19].forEach(el => {
-        if(el) el.addEventListener('input', calculateTwoPortVoltageDivider_ch19);
-    });
-    if (typeof calculateTwoPortVoltageDivider_ch19 === 'function') calculateTwoPortVoltageDivider_ch19();
-    // --- END Two-Port Demo ---
 
-
-    // --- 2x2 System Solver Demo (Appendix A) ---
-    const matA11_input_apA = document.getElementById('matA11'); // Suffixed
-    const matA12_input_apA = document.getElementById('matA12');
-    const matB1_input_apA = document.getElementById('matB1');
-    const matA21_input_apA = document.getElementById('matA21');
-    const matA22_input_apA = document.getElementById('matA22');
-    const matB2_input_apA = document.getElementById('matB2');
-    const solveMatrixBtn_apA = document.getElementById('solveMatrixBtn');
-    const detAValDisplay_apA = document.getElementById('detAVal');
-    const solXDisplay_apA = document.getElementById('solX');
-    const solYDisplay_apA = document.getElementById('solY');
-    const matrixInverseDisplay_apA = document.getElementById('matrixInverseDisplay');
-
-    function solve2x2System_apA() {
-        if (!matA11_input_apA || !matA12_input_apA || !matB1_input_apA || !matA21_input_apA || !matA22_input_apA || !matB2_input_apA ||
-            !detAValDisplay_apA || !solXDisplay_apA || !solYDisplay_apA || !matrixInverseDisplay_apA) return;
-        const a = parseFloat(matA11_input_apA.value); const b = parseFloat(matA12_input_apA.value);
-        const e_val = parseFloat(matB1_input_apA.value); const c = parseFloat(matA21_input_apA.value);
-        const d = parseFloat(matA22_input_apA.value); const f_val = parseFloat(matB2_input_apA.value);
-        if (isNaN(a) || isNaN(b) || isNaN(e_val) || isNaN(c) || isNaN(d) || isNaN(f_val)) {
-            detAValDisplay_apA.textContent = "Inv"; solXDisplay_apA.textContent = "Input"; solYDisplay_apA.textContent = "Input";
-            matrixInverseDisplay_apA.innerHTML = ""; return;
+        if (complexOpBtn) {
+            complexOpBtn.addEventListener('click', calculateComplexOperations);
         }
-        const detA = a * d - b * c; detAValDisplay_apA.textContent = detA.toFixed(4);
-        if (Math.abs(detA) < 1e-9) {
-            solXDisplay_apA.textContent = "No unique solution (detA=0)"; solYDisplay_apA.textContent = "";
-            matrixInverseDisplay_apA.innerHTML = "Matrix A is singular."; return;
+        const complexInputs = [z1ReInput, z1ImInput, z2ReInput, z2ImInput];
+        complexInputs.forEach(input => {
+            if(input) input.addEventListener('input', calculateComplexOperations);
+        });
+
+        // Initial calculation for complex demo
+        if (typeof calculateComplexOperations === "function") {
+            calculateComplexOperations();
         }
-        const x_sol = (1/detA)*(d*e_val - b*f_val); const y_sol = (1/detA)*(-c*e_val + a*f_val);
-        solXDisplay_apA.textContent = x_sol.toFixed(4); solYDisplay_apA.textContent = y_sol.toFixed(4);
-        matrixInverseDisplay_apA.innerHTML = `
-            <p style="line-height:1.2;">A<sup>-1</sup> = <sup>1</sup>/<sub>${detA.toFixed(2)}</sub> <span style="font-size:2em; vertical-align:middle;">[</span><table style="display:inline-table; vertical-align:middle; font-size:0.9em;"><tr><td>${d.toFixed(2)}</td><td>${(-b).toFixed(2)}</td></tr><tr><td>${(-c).toFixed(2)}</td><td>${a.toFixed(2)}</td></tr></table><span style="font-size:2em; vertical-align:middle;">]</span> 
-            = <span style="font-size:2em; vertical-align:middle;">[</span><table style="display:inline-table; vertical-align:middle; font-size:0.9em;"><tr><td>${(d/detA).toFixed(3)}</td><td>${(-b/detA).toFixed(3)}</td></tr><tr><td>${(-c/detA).toFixed(3)}</td><td>${(a/detA).toFixed(3)}</td></tr></table><span style="font-size:2em; vertical-align:middle;">]</span></p>`;
-    }
-    if (solveMatrixBtn_apA) solveMatrixBtn_apA.addEventListener('click', solve2x2System_apA);
-    [matA11_input_apA, matA12_input_apA, matB1_input_apA, matA21_input_apA, matA22_input_apA, matB2_input_apA].forEach(input => {
-        if (input) input.addEventListener('input', solve2x2System_apA);
-    });
-    if(typeof solve2x2System_apA === 'function') solve2x2System_apA();
-    // --- END 2x2 System Solver ---
 
-    // --- Complex Number Operations Demo (Appendix B) ---
-    const z1ReInput_apB = document.getElementById('z1_re'); const z1ImInput_apB = document.getElementById('z1_im');
-    const z2ReInput_apB = document.getElementById('z2_re'); const z2ImInput_apB = document.getElementById('z2_im');
-    const complexOpBtn_apB = document.getElementById('complexOpBtn');
-    const z1Display_apB = document.getElementById('z1_display'); const z1PolarDisplay_apB = document.getElementById('z1_polar_display');
-    const z2Display_apB = document.getElementById('z2_display'); const z2PolarDisplay_apB = document.getElementById('z2_polar_display');
-    const zAddDisplay_apB = document.getElementById('z_add_display'); const zSubDisplay_apB = document.getElementById('z_sub_display');
-    const zMulDisplay_apB = document.getElementById('z_mul_display'); const zMulPolarDisplay_apB = document.getElementById('z_mul_polar_display');
-    const zDivDisplay_apB = document.getElementById('z_div_display'); const zDivPolarDisplay_apB = document.getElementById('z_div_polar_display');
-
-    class Complex_apB { /* Using suffixed class name */
-        constructor(re=0,im=0){this.re=re;this.im=im;} static fromPolar(r,thetaRad){return new Complex_apB(r*Math.cos(thetaRad),r*Math.sin(thetaRad));}
-        get magnitude(){return Math.sqrt(this.re*this.re+this.im*this.im);} get angleRad(){return Math.atan2(this.im,this.re);} get angleDeg(){return this.angleRad*180/Math.PI;}
-        add(o){return new Complex_apB(this.re+o.re,this.im+o.im);} subtract(o){return new Complex_apB(this.re-o.re,this.im-o.im);}
-        multiply(o){const r=this.re*o.re-this.im*o.im;const i=this.re*o.im+this.im*o.re;return new Complex_apB(r,i);}
-        conjugate(){return new Complex_apB(this.re,-this.im);}
-        divide(o){const d=o.re*o.re+o.im*o.im;if(d===0)return new Complex_apB(NaN,NaN);const n=this.multiply(o.conjugate());return new Complex_apB(n.re/d,n.im/d);}
-        toString(d=2){const s=this.im<0?"-":"+";return `${this.re.toFixed(d)} ${s} j${Math.abs(this.im).toFixed(d)}`;}
-        toPolarString(d=2){return `${this.magnitude.toFixed(d)} ∠ ${this.angleDeg.toFixed(d)}°`;}
-    }
-    function calculateComplexOperations_apB() {
-        if(!z1ReInput_apB || !z1Display_apB) return;
-        const z1=new Complex_apB(parseFloat(z1ReInput_apB.value),parseFloat(z1ImInput_apB.value));const z2=new Complex_apB(parseFloat(z2ReInput_apB.value),parseFloat(z2ImInput_apB.value));
-        if(isNaN(z1.re)||isNaN(z1.im)||isNaN(z2.re)||isNaN(z2.im)){z1Display_apB.textContent="Inv";z1PolarDisplay_apB.textContent="";z2Display_apB.textContent="Inv";z2PolarDisplay_apB.textContent="";zAddDisplay_apB.textContent="Input";zSubDisplay_apB.textContent="";zMulDisplay_apB.textContent="";zMulPolarDisplay_apB.textContent="";zDivDisplay_apB.textContent="";zDivPolarDisplay_apB.textContent="";return;}
-        z1Display_apB.textContent=z1.toString();z1PolarDisplay_apB.textContent=z1.toPolarString();z2Display_apB.textContent=z2.toString();z2PolarDisplay_apB.textContent=z2.toPolarString();
-        zAddDisplay_apB.textContent=z1.add(z2).toString(); zSubDisplay_apB.textContent=z1.subtract(z2).toString();
-        const p=z1.multiply(z2);zMulDisplay_apB.textContent=p.toString();zMulPolarDisplay_apB.textContent=p.toPolarString();
-        const q=z1.divide(z2);if(isNaN(q.re)){zDivDisplay_apB.textContent="Div by 0";zDivPolarDisplay_apB.textContent="";}else{zDivDisplay_apB.textContent=q.toString();zDivPolarDisplay_apB.textContent=q.toPolarString();}
-    }
-    if(complexOpBtn_apB) complexOpBtn_apB.addEventListener('click', calculateComplexOperations_apB);
-    [z1ReInput_apB, z1ImInput_apB, z2ReInput_apB, z2ImInput_apB].forEach(el => { if(el) el.addEventListener('input', calculateComplexOperations_apB);});
-    if(typeof calculateComplexOperations_apB === "function") calculateComplexOperations_apB();
-    // --- END Complex Number Demo ---
-
-
-    // General Initial call after DOM is fully loaded
-    document.addEventListener('DOMContentLoaded', () => {
-        // This ensures all elements are available before scripts try to access them.
-        // All initial demo calls that are currently loose should ideally be moved here.
-        // For instance:
-        if (typeof calculateAndDisplayOhmLaw === 'function') calculateAndDisplayOhmLaw();
-        if (typeof analyzeRLC_ch16 === 'function') analyzeRLC_ch16(); // If analyzeRLC becomes analyzeRLC_ch16
-        if (typeof synthesizeSquareWaveFs_func === 'function') synthesizeSquareWaveFs_func(); // If ... becomes ..._func
-        if (typeof drawRectPulseAndSpectrum_ft === 'function') drawRectPulseAndSpectrum_ft(); // If ... becomes ..._ft
-        if (typeof calculateTwoPortVoltageDivider_ch19 === 'function') calculateTwoPortVoltageDivider_ch19();
-        if (typeof solve2x2System_apA === 'function') solve2x2System_apA();
-        if (typeof calculateComplexOperations_apB === 'function') calculateComplexOperations_apB();
-        if (typeof analyzeKCLNode === 'function') analyzeKCLNode(); 
-            
-        if (typeof updateActiveTocLinkOnScroll === 'function') updateActiveTocLinkOnScroll();
-    });
+    
 
     </script>
 </body>
